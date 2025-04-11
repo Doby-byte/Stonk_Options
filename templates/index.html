@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash-Secured Puts (CSP) Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous"/>
+    <link href="https://cdn.jsdelivr.net/npm/tabulator-tables@5.4.4/dist/css/tabulator.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .control-panel, .guide-panel, .results-panel, .recommendations-panel {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .select2-container {
+            width: 100% !important;
+        }
+        .best { background-color: #d4edda !important; }
+        .better { background-color: #fff3cd !important; }
+        .good { background-color: #f8f9fa !important; }
+        .recommendation-card {
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .best-card {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        .better-card {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+        }
+        .good-card {
+            background-color: #f8f9fa;
+            border: 1px solid #e2e3e5;
+        }
+        .explanation-section {
+            margin-top: 20px;
+        }
+        .column-explanation {
+            font-size: 0.9rem;
+        }
+        /* Top Choices Styles */
+        #topChoices .card {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #topChoices .card-header {
+            font-weight: bold;
+            padding: 10px 15px;
+        }
+        #topChoices .card-body {
+            padding: 15px;
+        }
+        #topChoices .card p {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        #topChoices .bg-success {
+            background-color: #28a745 !important;
+        }
+        #topChoices .bg-warning {
+            background-color: #ffc107 !important;
+        }
+        #topChoices .bg-light {
+            background-color: #f8f9fa !important;
+            border: 1px solid #ddd;
+        }
+        /* Favorites Styles */
+        .favorite-star {
+            cursor: pointer;
+            margin-right: 5px;
+            color: #ccc;
+        }
+        .favorite-star.active {
+            color: gold;
+        }
+        .favorite-star:hover {
+            transform: scale(1.2);
+        }
+        .favorites-toolbar {
+            margin-bottom: 10px;
+        }
+        #favoritesList .list-group-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .select2-results__option {
+            display: flex;
+            align-items: center;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        
+        .control-panel {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-panel {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .recommendations {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .recommendation-card {
+            flex: 1;
+            min-width: 250px;
+            max-width: 350px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .recommendation-card .card-header {
+            font-weight: bold;
+            color: white;
+        }
+        
+        .best-header {
+            background-color: #28a745;
+        }
+        
+        .better-header {
+            background-color: #17a2b8;
+        }
+        
+        .good-header {
+            background-color: #6c757d;
+        }
+        
+        .recommendation-stocks {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .stock-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .stock-item:last-child {
+            border-bottom: none;
+        }
+        
+        .stock-ticker {
+            font-weight: bold;
+        }
+        
+        .stock-details {
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        /* Favorites Styling */
+        .favorites-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .favorite-star {
+            color: #ffc107;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        
+        .select2-option-wrapper {
+            display: flex;
+            align-items: center;
+            padding: 3px 0;
+        }
+        
+        #favoritesList {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        
+        #favoritesList .btn-danger {
+            padding: 2px 6px;
+        }
+        
+        .hidden-file-input {
+            display: none;
+        }
+        
+        .favorites-badge {
+            background-color: #007bff;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+        
+        /* Favorites Styling */
+        .table-star {
+            color: #ccc;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        
+        .table-star.favorite {
+            color: #ffc107;
+        }
+        
+        .table-star:hover {
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <h1 class="mb-4">Cash-Secured Puts (CSP) Analysis</h1>
+        
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="btn-group">
+                <button class="btn btn-primary" id="refresh">
+                    <span id="loadingSpinner" class="spinner-border spinner-border-sm me-2" role="status" style="display: none;"></span>
+                    <i class="fas fa-sync-alt"></i> Refresh Data
+                </button>
+                <button class="btn btn-outline-warning" id="favoritesBtn">
+                    <i class="fas fa-star"></i> Favorites <span id="favoritesCount" class="badge bg-warning text-dark">0</span>
+                </button>
+                <button class="btn btn-outline-danger" id="clearFavorites"><i class="fas fa-trash"></i> Clear</button>
+                </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="stockSelect" class="form-label">Select Stocks</label>
+                    <div class="favorites-toolbar">
+                        <button id="loadFavoritesBtn" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-star"></i> Load Favorites
+                        </button>
+            </div>
+                    <select id="stockSelect" class="form-select" multiple="multiple">
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="timeframeSelect" class="form-label">Timeframe</label>
+                    <select id="timeframeSelect" class="form-select">
+                        <option value="7">1 Week</option>
+                        <option value="14">2 Weeks</option>
+                        <option value="30" selected>1 Month</option>
+                        <option value="60">2 Months</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="minOtmProb" class="form-label">Min OTM Probability (%)</label>
+                    <input type="number" class="form-control" id="minOtmProb" value="90" min="0" max="100">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="maxBudget" class="form-label">Max Cash Required ($)</label>
+                    <input type="number" class="form-control" id="maxBudget" value="10000" min="0">
+                </div>
+                </div>
+            </div>
+            
+        <!-- Recommendations Panel -->
+        <div class="recommendations-panel">
+            <h3>CSP Strategy Recommendations</h3>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="recommendation-card best-card">
+                        <h4>Best CSP Opportunities</h4>
+                        <ul>
+                            <li>OTM probability: 85%+</li>
+                            <li>Premium/day: $15+</li>
+                            <li>Strike price: 8%+ below current</li>
+                            <li>IV: 40-80%</li>
+                        </ul>
+                        <p><small>Balanced quality plays that offer good protection with reasonable returns</small></p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="recommendation-card better-card">
+                        <h4>Better CSP Opportunities</h4>
+                        <ul>
+                            <li>OTM probability: 75%+</li>
+                            <li>Premium/day: $25+</li>
+                            <li>Strike price: 5%+ below current</li>
+                            <li>IV: 50-100%</li>
+                        </ul>
+                        <p><small>Value opportunity plays with stronger returns but moderate risk</small></p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="recommendation-card good-card">
+                        <h4>Good CSP Opportunities</h4>
+                        <ul>
+                            <li>OTM probability: 65%+</li>
+                            <li>Premium/day: $40+</li>
+                            <li>Strike price: Any below current</li>
+                            <li>IV: Any level</li>
+                        </ul>
+                        <p><small>Tactical high-return plays with higher risk for aggressive strategies</small></p>
+                    </div>
+                </div>
+            </div>
+            <div id="summary" class="mt-3">
+                <div class="alert alert-info">
+                    <strong>Summary:</strong> Found 
+                    <span id="bestCount">0</span> best, 
+                    <span id="betterCount">0</span> better, and 
+                    <span id="goodCount">0</span> good CSP opportunities across 
+                    <span id="totalStocks">0</span> stocks.
+                    <div class="mt-2">
+                        <span class="badge bg-success"><span id="greedCount">0</span> Greed</span>
+                        <span class="badge bg-danger"><span id="fearCount">0</span> Fear</span>
+                </div>
+            </div>
+        </div>
+        
+            <!-- Top Choices Section -->
+            <div id="topChoices" class="mt-4">
+                <h4>Top Choices</h4>
+                <div class="row" id="topChoicesContent">
+                    <div class="col-md-12">
+                        <p class="text-center text-muted">Use the Refresh Data button to fetch top CSP opportunities</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Guide Panel -->
+        <div class="guide-panel" id="guideAccordion">
+            <h3>Cash-Secured Puts (CSP) Analysis Guide</h3>
+            <p>A cash-secured put is an options strategy where you sell a put option and set aside enough cash to buy the stock if it's assigned to you. You collect a premium upfront, and your goal is for the option to expire worthless so you keep the entire premium.</p>
+            
+            <div class="explanation-section">
+                <h4>Column Explanations</h4>
+                <div class="row">
+                    <div class="col-md-3">
+                        <h5>Stock Information</h5>
+                        <div class="column-explanation">
+                            <strong>Stock:</strong> Ticker symbol of the company<br>
+                            <strong>Company:</strong> Full company name<br>
+                            <strong>Current:</strong> Current stock price<br>
+                            <strong>Strike:</strong> Price at which you'd buy the stock if assigned
+                            </div>
+                        </div>
+                    <div class="col-md-3">
+                        <h5>Position Metrics</h5>
+                        <div class="column-explanation">
+                            <strong>% Below:</strong> How far below current price the strike is (higher = safer)<br>
+                            <strong>OTM Prob:</strong> Probability the option will expire worthless (higher = safer)<br>
+                            <strong>IV:</strong> Implied volatility (higher = more premium but more risk)<br>
+                            <strong>RSI:</strong> Relative Strength Index (under 30 = oversold, over 70 = overbought)
+                    </div>
+                            </div>
+                    <div class="col-md-3">
+                        <h5>Time & Returns</h5>
+                        <div class="column-explanation">
+                            <strong>Expiry:</strong> When the option contract expires<br>
+                            <strong>Days:</strong> Number of days until expiration<br>
+                            <strong>Premium:</strong> Cash you receive for selling the put contract ($)<br>
+                            <strong>$/Day:</strong> Daily income in dollars per contract (Premium ÷ Days)
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <h5>Advanced Metrics</h5>
+                        <div class="column-explanation">
+                            <strong>Return %:</strong> (Premium ÷ Strike) × 100 = return if option expires worthless<br>
+                            <strong>OTM Prob:</strong> Probability the option will expire worthless<br>
+                            <strong>IV:</strong> Implied volatility (higher = more premium but more risk)<br>
+                            <strong>RSI:</strong> Relative Strength Index (under 30 = potentially oversold, over 70 = potentially overbought)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+            <div class="explanation-section">
+                <h4>Tips for Success</h4>
+                <ol>
+                    <li>Sell CSPs on stocks you wouldn't mind owning at the strike price</li>
+                    <li>Look for strikes below support levels</li>
+                    <li>Consider stocks with upward or sideways momentum</li>
+                    <li>Monitor positions regularly, especially if the stock approaches your strike price</li>
+                    <li>Don't commit all available capital - keep some in reserve for adjustments</li>
+                </ol>
+                </div>
+            </div>
+            
+        <!-- Results Panel -->
+        <div class="results-panel">
+            <h3>CSP Opportunities</h3>
+            <div id="resultsTable"></div>
+        </div>
+    </div>
+
+    <!-- Create a modal for favorites management -->
+    <div class="modal fade" id="favoritesModal" tabindex="-1" aria-labelledby="favoritesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="favoritesModalLabel">Manage Favorites</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="noFavoritesMessage" class="text-center text-muted" style="display: none;">
+                        No favorites saved. Click the star icon next to stocks to save them as favorites.
+                    </p>
+                    <div id="favoritesList" class="list-group">
+                        <!-- Favorites will be populated here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary" id="loadAllFavoritesBtn">Load All Favorites</button>
+                    <button type="button" class="btn btn-outline-danger" id="clearAllFavoritesBtn">Clear All</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@5.5.0/dist/js/tabulator.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <script>
+        let favorites = [];
+        const savedFavorites = localStorage.getItem('favorites');
+        if (savedFavorites) {
+            try {
+                favorites = JSON.parse(savedFavorites);
+                console.log('Loaded favorites from storage:', favorites);
+            } catch (e) {
+                console.error('Error loading favorites:', e);
+                localStorage.removeItem('favorites');
+            }
+        }
+
+        $(document).ready(function() {
+            console.log('Document ready');
+            
+            // Debug refresh functionality
+            console.log('Refresh button:', $('#refresh').length ? 'Found' : 'Not found');
+            
+            // Initialize Select2 for stock selection
+            $('#stockSelect').select2({
+                placeholder: 'Select stocks...',
+                allowClear: true,
+                templateResult: formatStockOption,
+                templateSelection: formatStockSelection
+            });
+            
+            // Custom formatting for dropdown options
+            function formatStockOption(stock) {
+                if (!stock.id) return stock.text;
+                
+                try {
+                    const stockData = JSON.parse(stock.id);
+                    const isFavorite = favorites.some(f => f.ticker === stockData.ticker);
+                    
+                    const $option = $(
+                        `<div class="select2-option-wrapper">
+                            <i class="fa${isFavorite ? 's' : 'r'} fa-star favorite-star-dropdown" 
+                               style="color: ${isFavorite ? '#ffc107' : '#ccc'}; cursor: pointer; margin-right: 8px;"
+                               data-ticker="${stockData.ticker}" 
+                               data-name="${stockData.name}"></i>
+                            <span>${stock.text}</span>
+                        </div>`
+                    );
+                    
+                    // Add direct event handler to the star
+                    $option.find('.favorite-star-dropdown').on('mousedown', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const ticker = $(this).data('ticker');
+                        const name = $(this).data('name');
+                        
+                        console.log('Star clicked directly in dropdown for:', ticker);
+                        
+                        // Toggle favorite
+                        toggleFavorite(ticker, name);
+                        
+                        // Update appearance immediately
+                        const isNowFavorite = favorites.some(f => f.ticker === ticker);
+                        $(this).toggleClass('fas', isNowFavorite).toggleClass('far', !isNowFavorite);
+                        $(this).css('color', isNowFavorite ? '#ffc107' : '#ccc');
+                        
+                        // Prevent closing of the dropdown
+                        return false;
+                    });
+                    
+                    return $option;
+                } catch (e) {
+                    console.error("Error formatting stock option:", e);
+                    return stock.text;
+                }
+            }
+            
+            // Custom formatting for selected options
+            function formatStockSelection(stock) {
+                if (!stock.id) return stock.text;
+                return stock.text;
+            }
+            
+            // Initialize Tabulator
+            initTable();
+            
+            // Load available stocks
+            loadStocks();
+            
+            // Setup event handlers
+            setupEventHandlers();
+        });
+        
+        // LocalStorage functions for favorites
+        function saveFavorites() {
+            try {
+                localStorage.setItem('favorites', JSON.stringify(favorites));
+                updateFavoritesCount();
+                console.log("Saved favorites:", favorites);
+            } catch (e) {
+                console.error("Error saving favorites:", e);
+            }
+        }
+        
+        function loadFavorites() {
+            try {
+                const saved = localStorage.getItem('favorites');
+                if (saved) {
+                    favorites = JSON.parse(saved);
+                    console.log("Loaded favorites:", favorites);
+                } else {
+                    console.log("No saved favorites found");
+                    favorites = [];
+                }
+                updateFavoritesCount();
+            } catch (e) {
+                console.error("Error loading favorites:", e);
+                favorites = [];
+            }
+        }
+        
+        // Toggle favorite status
+        function toggleFavorite(ticker, name) {
+            if (!ticker) {
+                console.error("No ticker provided to toggleFavorite");
+                return;
+            }
+
+            console.log("toggleFavorite called for:", ticker, name);
+            
+            // Find if ticker already exists in favorites
+            const index = favorites.findIndex(f => f.ticker === ticker);
+            const wasAlreadyFavorite = index >= 0;
+            
+            if (wasAlreadyFavorite) {
+                // Remove from favorites
+                favorites.splice(index, 1);
+                console.log(`Removed ${ticker} from favorites. New favorites:`, favorites);
+            } else {
+                // Add to favorites
+                favorites.push({
+                    ticker: ticker,
+                    name: name || "Unknown"
+                });
+                console.log(`Added ${ticker} to favorites. New favorites:`, favorites);
+            }
+            
+            // Save to localStorage
+            saveFavorites();
+            
+            // Update all UI elements that show favorites status
+            synchronizeFavorites();
+        }
+        
+        // Synchronize favorites across all UI elements
+        function synchronizeFavorites() {
+            // Update table stars
+            if (table) {
+                table.redraw(true);
+            }
+            
+            // Update stars in dropdown
+            updateDropdownStars();
+            
+            // Update favorite count badge
+            updateFavoritesCount();
+        }
+        
+        // Update stars in dropdown
+        function updateDropdownStars() {
+            // When dropdown is open, update stars
+            $('.favorite-star-dropdown').each(function() {
+                const ticker = $(this).data('ticker');
+                const isFavorite = favorites.some(f => f.ticker === ticker);
+                
+                // Update class and color
+                $(this)
+                    .toggleClass('fas', isFavorite)
+                    .toggleClass('far', !isFavorite)
+                    .css('color', isFavorite ? '#ffc107' : '#ccc');
+            });
+        }
+        
+        // Update all UI elements that display favorites
+        function updateFavoritesUI(ticker, isFavorite) {
+            // Update stars in the table
+            $(`.tabulator-cell .favorite-star[data-ticker="${ticker}"]`)
+                .toggleClass('text-warning', isFavorite)
+                .toggleClass('text-light', !isFavorite);
+                
+            // Find all dropdown stars for this ticker
+            $(`.favorite-star-dropdown[data-ticker="${ticker}"]`).each(function() {
+                // Update class (fas = solid star, far = outline star)
+                $(this)
+                    .toggleClass('fas', isFavorite)
+                    .toggleClass('far', !isFavorite)
+                    .css('color', isFavorite ? '#ffc107' : '#ccc');
+            });
+            
+            // Update the favorites count badge
+            updateFavoritesCount();
+        }
+        
+        // Initialize table
+        function initTable() {
+            table = new Tabulator("#resultsTable", {
+                data: [],
+                layout: "fitColumns",
+                columns: [
+                    {title: "Stock", field: "ticker", sorter: "string", width: 80},
+                    {title: "Company", field: "company", sorter: "string", width: 150},
+                    {title: "Strike", field: "strike", sorter: "number", formatter: "money", width: 80},
+                    {title: "Current", field: "current_price", sorter: "number", formatter: "money", width: 80},
+                    {title: "MA50", field: "ma50", sorter: "number", formatter: "money", width: 80},
+                    {title: "% Below", field: "percent_below", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        return value ? value.toFixed(2) + '%' : '';
+                    }, width: 80},
+                    {title: "Expiry", field: "expiry", sorter: "date", width: 100},
+                    {title: "Days", field: "days_to_expiry", sorter: "number", width: 70},
+                    {title: "Premium", field: "premium", sorter: "number", formatter: "money", width: 90},
+                    {title: "$/Day", field: "premium_per_day", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        return value ? '$' + value.toFixed(2) : '$0.00';
+                    }, width: 90},
+                    {title: "Return %", field: "return_percent", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        return value ? value.toFixed(2) + '%' : '0%';
+                    }, width: 90},
+                    {title: "OTM Prob", field: "otm_probability", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        return value ? value.toFixed(1) + '%' : '0%';
+                    }, width: 90},
+                    {title: "IV", field: "implied_volatility", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        return value ? (value * 100).toFixed(1) + '%' : '0%';
+                    }, width: 70},
+                    {title: "RSI", field: "rsi", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        return value ? value.toFixed(1) : '0';
+                    }, width: 70},
+                    {title: "", field: "favorite", formatter: function(cell) {
+                        const ticker = cell.getData().ticker;
+                        const isFavorite = favorites.some(f => f.ticker === ticker);
+                        return `<i class="fas fa-star favorite-star ${isFavorite ? 'text-warning' : 'text-light'}" data-ticker="${ticker}"></i>`;
+                    }, width: 30, headerSort: false, cellClick: function(e, cell) {
+                        e.stopPropagation(); // Stop cell click propagation
+                        
+                        console.log("Star cell clicked");
+                        
+                        // Get ticker and company from cell data
+                        const ticker = cell.getData().ticker;
+                        const company = cell.getData().company;
+                        
+                        // Toggle favorite status
+                        toggleFavorite(ticker, company);
+                    }}
+                ],
+                initialSort: [
+                    {column: "return_percent", dir: "desc"}
+                ],
+                rowFormatter: function(row) {
+                    const data = row.getData();
+                    
+                    // Use the category field directly
+                    switch(data.category) {
+                        case 'Best':
+                            row.getElement().classList.add("best");
+                            break;
+                        case 'Better':
+                            row.getElement().classList.add("better");
+                            break;
+                        case 'Good':
+                            row.getElement().classList.add("good");
+                            break;
+                    }
+                }
+            });
+            
+            // Set up direct click handler for star icons
+            $(document).on('click', '.tabulator-cell .favorite-star', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                const ticker = $(this).data('ticker');
+                console.log("Star icon clicked in table:", ticker);
+                
+                if (!ticker) {
+                    console.error("No ticker found on star element");
+                    return;
+                }
+                
+                // Find the parent row data
+                let company = "";
+                try {
+                    const $row = $(this).closest('.tabulator-row');
+                    if ($row.length) {
+                        const rowId = $row.attr('data-id');
+                        if (rowId) {
+                            const rowComponent = table.getRow(rowId);
+                            if (rowComponent) {
+                                const rowData = rowComponent.getData();
+                                company = rowData.company || "";
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error getting row data:", err);
+                }
+                
+                // Call toggleFavorite with the ticker and company
+                toggleFavorite(ticker, company || "Unknown");
+                
+                // Toggle the star appearance directly
+                $(this).toggleClass('text-warning text-light');
+            });
+        }
+        
+        // Load available stocks
+        function loadStocks() {
+            $.get('/api/stocks', function(response) {
+                const stocks = response.stocks;
+                stocks.forEach(stock => {
+                    $('#stockSelect').append(new Option(
+                        `${stock.ticker} - ${stock.name}`,
+                        JSON.stringify(stock)
+                    ));
+                });
+            });
+        }
+        
+        // Setup event handlers
+        function setupEventHandlers() {
+            // Load favorites button
+            $('#loadFavoritesBtn').click(function() {
+                try {
+                    console.log('Load Favorites button clicked');
+                    
+                    if (favorites.length === 0) {
+                        console.log('No favorites found');
+                        alert('No favorites saved. Click the star icon next to stocks to save them as favorites.');
+                        return;
+                    }
+                    
+                    console.log(`Found ${favorites.length} favorites:`, favorites);
+                    
+                    // Ensure we have stocks loaded
+                    const stockOptions = $('#stockSelect option');
+                    console.log(`Found ${stockOptions.length} stock options in dropdown`);
+                    
+                    if (stockOptions.length === 0) {
+                        console.log('No stock options loaded yet');
+                        alert('Stocks are still loading. Please wait a moment and try again.');
+                        return;
+                    }
+                    
+                    // Clear current selection
+                    $('#stockSelect').val(null).trigger('change');
+                    console.log('Cleared current selection');
+                    
+                    // Create arrays for tracking what we're doing
+                    const valuesToSelect = [];
+                    const tickersToSelect = [];
+                    
+                    // First, collect ALL options into a manageable array
+                    const allStockOptions = [];
+                    stockOptions.each(function() {
+                        const $option = $(this);
+                        const value = $option.val();
+                        
+                        if (!value) return;
+                        
+                        try {
+                            const stockData = JSON.parse(value);
+                            allStockOptions.push({
+                                value: value,
+                                ticker: stockData.ticker,
+                                name: stockData.name,
+                                element: $option[0]
+                            });
+                        } catch (e) {
+                            console.error('Error parsing stock option:', value, e);
+                        }
+                    });
+                    
+                    console.log(`Parsed ${allStockOptions.length} valid stock options`);
+                    
+                    // Now match favorites against available options
+                    favorites.forEach(favorite => {
+                        const match = allStockOptions.find(option => 
+                            option.ticker === favorite.ticker
+                        );
+                        
+                        if (match) {
+                            valuesToSelect.push(match.value);
+                            tickersToSelect.push(match.ticker);
+                            console.log(`Found match for favorite ${favorite.ticker}`);
+                        } else {
+                            console.warn(`Could not find match for favorite ${favorite.ticker}`);
+                        }
+                    });
+                    
+                    console.log(`Found ${valuesToSelect.length} matches: ${tickersToSelect.join(', ')}`);
+                    
+                    if (valuesToSelect.length === 0) {
+                        alert('None of your favorites are available in the current stock list.');
+                        return;
+                    }
+                    
+                    // Set the values in the select
+                    console.log('Setting values in select:', valuesToSelect);
+                    $('#stockSelect').val(valuesToSelect).trigger('change');
+                    
+                    // Verify we set the values
+                    const currentlySelected = $('#stockSelect').val() || [];
+                    console.log(`After setting values, select has ${currentlySelected.length} items selected`);
+                    
+                    // Highlight button to show success
+                    const $btn = $(this);
+                    $btn.removeClass('btn-outline-primary').addClass('btn-success');
+                    setTimeout(() => {
+                        $btn.removeClass('btn-success').addClass('btn-outline-primary');
+                    }, 1000);
+                    
+                    // Automatically trigger refresh after loading favorites
+                    setTimeout(() => {
+                        // Double-check we have selections
+                        const finalSelection = $('#stockSelect').val();
+                        if (finalSelection && finalSelection.length > 0) {
+                            console.log(`Triggering refresh with ${finalSelection.length} stocks selected`);
+                            $('#refresh').click();
+                } else {
+                            console.warn('Cannot refresh - no stocks selected');
+                        }
+                    }, 500);
+                } catch (e) {
+                    console.error('Error in Load Favorites button:', e);
+                    alert('An error occurred while loading favorites. See console for details.');
+                }
+            });
+            
+            // Clear favorites
+            $('#clearFavorites').click(function() {
+                if (confirm('Are you sure you want to clear all favorites?')) {
+                    favorites = [];
+                    saveFavorites();
+                    table.redraw(true);
+                }
+            });
+            
+            // Show only favorites button
+            $('#favoritesBtn').click(function() {
+                console.log('Favorites button clicked');
+                
+                if (favorites.length === 0) {
+                    // Show empty message
+                    $('#noFavoritesMessage').show();
+                    $('#favoritesList').hide();
+                } else {
+                    // Hide empty message
+                    $('#noFavoritesMessage').hide();
+                    $('#favoritesList').show();
+                    
+                    // Clear and populate favorites list
+                    populateFavoritesList();
+                }
+                
+                // Show the modal
+                var favoritesModal = new bootstrap.Modal(document.getElementById('favoritesModal'));
+                favoritesModal.show();
+            });
+            
+            // Function to populate the favorites list in the modal
+            function populateFavoritesList() {
+                const $list = $('#favoritesList');
+                $list.empty();
+                
+                console.log('Populating favorites list with:', favorites);
+                
+                favorites.forEach(favorite => {
+                    const $item = $(`
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-star text-warning me-2"></i>
+                                <strong>${favorite.ticker}</strong> - ${favorite.name}
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-primary load-favorite-btn" data-ticker="${favorite.ticker}">
+                                    <i class="fas fa-plus"></i> Add to Selection
+                                </button>
+                                <button class="btn btn-sm btn-danger remove-favorite-btn" data-ticker="${favorite.ticker}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `);
+                    
+                    $list.append($item);
+                });
+                
+                // Add event handlers for the buttons
+                $('.load-favorite-btn').click(function() {
+                    const ticker = $(this).data('ticker');
+                    const favorite = favorites.find(f => f.ticker === ticker);
+                    
+                    if (favorite) {
+                        // Find the matching option in the select box
+                        const allOptions = [];
+                        $('#stockSelect option').each(function() {
+                            try {
+                                const value = $(this).val();
+                                if (value) {
+                                    const data = JSON.parse(value);
+                                    if (data.ticker === ticker) {
+                                        allOptions.push($(this).val());
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Error parsing option:', e);
+                            }
+                        });
+                        
+                        if (allOptions.length > 0) {
+                            // Get current selection
+                            const currentSelection = $('#stockSelect').val() || [];
+                            
+                            // Add this option if not already selected
+                            if (!currentSelection.includes(allOptions[0])) {
+                                const newSelection = [...currentSelection, allOptions[0]];
+                                $('#stockSelect').val(newSelection).trigger('change');
+                                console.log(`Added ${ticker} to selection`);
+                        } else {
+                                console.log(`${ticker} already in selection`);
+                            }
+                        }
+                    }
+                });
+                
+                $('.remove-favorite-btn').click(function() {
+                    const ticker = $(this).data('ticker');
+                    const favorite = favorites.find(f => f.ticker === ticker);
+                    
+                    if (favorite && confirm(`Remove ${ticker} from favorites?`)) {
+                        toggleFavorite(ticker, favorite.name);
+                        $(this).closest('.list-group-item').remove();
+                        
+                        // If no more favorites, show empty message
+                        if (favorites.length === 0) {
+                            $('#noFavoritesMessage').show();
+                            $('#favoritesList').hide();
+                        }
+                    }
+                });
+            }
+            
+            // Handle "Load All Favorites" button
+            $('#loadAllFavoritesBtn').click(function() {
+                if (favorites.length === 0) {
+                    alert('No favorites to load.');
+                    return;
+                }
+                
+                $('#loadFavoritesBtn').click();
+                
+                // Close the modal
+                bootstrap.Modal.getInstance(document.getElementById('favoritesModal')).hide();
+            });
+            
+            // Handle "Clear All Favorites" button
+            $('#clearAllFavoritesBtn').click(function() {
+                if (favorites.length === 0) {
+                    alert('No favorites to clear.');
+                    return;
+                }
+                
+                if (confirm('Are you sure you want to clear all favorites?')) {
+                    favorites = [];
+                    saveFavorites();
+                    
+                    // Update UI
+                    $('#noFavoritesMessage').show();
+                    $('#favoritesList').hide();
+                    
+                    // Update other UI elements
+                    synchronizeFavorites();
+                }
+            });
+            
+            // Refresh button
+            $('#refresh').click(function() {
+                console.log('Refresh button clicked!');
+                
+                try {
+                    // Show loading spinner
+                    $('#loadingSpinner').show();
+                    
+                    // Get selected stocks
+                    const selectedOptions = $('#stockSelect').val();
+                    console.log('Selected options:', selectedOptions);
+                    
+                    if (!selectedOptions || selectedOptions.length === 0) {
+                        alert('Please select at least one stock.');
+                        $('#loadingSpinner').hide();
+                        return;
+                    }
+                    
+                    // Get stocks from selection
+                    const stocks = selectedOptions.map(option => {
+                        try {
+                            return JSON.parse(option);
+                        } catch (e) {
+                            console.error('Error parsing option:', option, e);
+                            return null;
+                        }
+                    }).filter(s => s !== null);
+                    
+                    console.log('Stocks to refresh:', stocks);
+                    
+                    // Get filter values
+                    const minProb = parseFloat($('#minOtmProb').val() || 90);
+                    const maxBudget = parseFloat($('#maxBudget').val() || 10000);
+                    const timeframeValue = parseInt($('#timeframeSelect').val() || 30);
+                    
+                    console.log('Filter values:', { minProb, maxBudget, timeframeValue });
+                    
+                    // Format the request payload
+                    const stocksData = stocks.map(stock => ({
+                        ticker: stock.ticker,
+                        name: stock.name
+                    }));
+                    
+                    console.log('Preparing API request with payload:', { 
+                        stocks: stocksData, 
+                        min_prob: minProb, 
+                        max_budget: maxBudget, 
+                        timeframe: timeframeValue 
+                    });
+                    
+                    // Make the API request
+                $.ajax({
+                        url: '/api/refresh',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            stocks: stocksData,
+                            min_prob: minProb,
+                            max_budget: maxBudget,
+                            timeframe: timeframeValue
+                        }),
+                        success: function(response) {
+                            console.log('API response received:', response);
+                            // Update the table with the new data
+                            updateTable(response.stocks);
+                            updateSummary(response.summary);
+                            // Hide loading spinner
+                            $('#loadingSpinner').hide();
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('API Error:', xhr.responseText);
+                            alert('Error fetching data: ' + (xhr.responseText || error));
+                            // Hide loading spinner
+                            $('#loadingSpinner').hide();
+                        }
+                    });
+                } catch (e) {
+                    console.error('Uncaught error in refresh handler:', e);
+                    alert('An unexpected error occurred: ' + e.message);
+                    $('#loadingSpinner').hide();
+                }
+            });
+
+            // Add direct event handler for favorite stars in the dropdown after Select2 is initialized
+            $('#stockSelect').on('select2:open', function() {
+                // Wait for the dropdown to be fully rendered
+                    setTimeout(function() {
+                    console.log('Select2 dropdown opened, setting up star handlers');
+                    
+                    // Remove any existing handlers first to avoid duplicates
+                    $('.select2-results__options').off('click', '.favorite-star-dropdown');
+                    
+                    // Add click handler to the star icons in the dropdown
+                    $('.select2-results__options').on('click', '.favorite-star-dropdown', function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        
+                        const ticker = $(this).data('ticker');
+                        const name = $(this).data('name');
+                        
+                        console.log('Dropdown star clicked for ticker:', ticker, 'name:', name);
+                        
+                        // Toggle the favorite status
+                        toggleFavorite(ticker, name);
+                        
+                        // Prevent select2 from selecting this option
+                        return false;
+                    });
+                }, 100);
+            });
+        }
+        
+        // Function to update the table with new data
+        function updateTable(data) {
+            console.log('Updating table with data:', data);
+            
+            // Clear any existing data
+            if (table) {
+                table.clearData();
+            }
+            
+            // Initialize table if it doesn't exist
+            if (!table) {
+                console.log('Initializing table');
+                table = new Tabulator("#resultsTable", {
+                    data: data,
+                    layout: "fitColumns",
+                    responsiveLayout: "collapse",
+                    pagination: "local",
+                    paginationSize: 15,
+                    paginationSizeSelector: [10, 15, 25, 50, 100],
+                    movableColumns: true,
+                    height: "calc(100vh - 280px)",
+                    initialSort: [
+                        {column: "premium_per_day", dir: "desc"}
+                    ],
+                    columns: [
+                        {title: "", field: "favorite", formatter: function(cell) {
+                            const data = cell.getRow().getData();
+                            const ticker = data.ticker;
+                            const isFavorite = favorites.some(f => f.ticker === ticker);
+                            return `<i class="fa fa-star table-star ${isFavorite ? 'favorite' : ''}" data-ticker="${ticker}" data-name="${data.company || ''}"></i>`;
+                        }, width: 30, headerSort: false, hozAlign: "center"},
+                        {title: "Category", field: "category", width: 100, formatter: function(cell) {
+                            if (!cell.getValue()) return "";
+                            const category = cell.getValue();
+                            let className = '';
+                            if (category === 'Best') className = 'text-success';
+                            else if (category === 'Better') className = 'text-primary';
+                            else if (category === 'Good') className = 'text-warning';
+                            return `<span class="${className} fw-bold">${category}</span>`;
+                        }},
+                        {title: "Ticker", field: "ticker", width: 100},
+                        {title: "Company", field: "company", width: 200},
+                        {title: "Current", field: "current_price", formatter: "money", formatterParams: {precision: 2}, width: 100},
+                        {title: "MA50", field: "ma50", formatter: "money", formatterParams: {precision: 2}, width: 100},
+                        {title: "% Below", field: "percent_below", formatter: function(cell) {
+                            const value = cell.getValue();
+                            return value ? value.toFixed(2) + '%' : '';
+                        }, width: 100},
+                        {title: "RSI", field: "rsi", formatter: function(cell) {
+                            const val = cell.getValue();
+                            let className = '';
+                            if (val > 70) className = 'text-danger';
+                            else if (val > 50) className = 'text-warning';
+                            else if (val < 30) className = 'text-success';
+                            return `<span class="${className}">${val ? val.toFixed(1) : ''}</span>`;
+                        }, width: 80},
+                        {title: "F/G", field: "fear_greed", width: 80},
+                        {title: "Strike", field: "strike", formatter: "money", formatterParams: {precision: 2}, width: 100},
+                        {title: "Premium", field: "premium", formatter: "money", formatterParams: {precision: 2}, width: 100},
+                        {title: "Return %", field: "return_percent", formatter: function(cell) {
+                            return cell.getValue().toFixed(2) + '%';
+                        }, width: 100},
+                        {title: "$/Day", field: "premium_per_day", formatter: function(cell) {
+                            return '$' + cell.getValue().toFixed(2);
+                        }, width: 100},
+                        {title: "Prob", field: "otm_probability", formatter: function(cell) {
+                            return cell.getValue().toFixed(1) + '%';
+                        }, width: 80},
+                        {title: "Days", field: "days_to_expiry", width: 80},
+                        {title: "Expiry", field: "expiry", width: 120},
+                        {title: "IV", field: "implied_volatility", formatter: function(cell) {
+                            return (cell.getValue() * 100).toFixed(1) + '%';
+                        }, width: 80},
+                    ],
+                    rowClick: function(e, row) {
+                        // Toggle row selection
+                        row.toggleSelect();
+                    }
+                });
+                
+                // Add event listener for the table-star clicks
+                $("#resultsTable").on("click", ".table-star", function(e) {
+                    e.stopPropagation(); // Prevent row selection
+                    const ticker = $(this).data("ticker");
+                    const name = $(this).data("name");
+                    toggleFavorite(ticker, name);
+                });
+                
+            } else {
+                // Update existing table with new data
+                table.setData(data);
+            }
+            
+            // Update stars in the table
+            updateTableStars();
+        }
+        
+        // Function to update summary stats
+        function updateSummary(summary) {
+            console.log('Updating summary:', summary);
+            
+            if (!summary) return;
+            
+            // Update summary counts
+            $('#totalStocks').text(summary.totalStocks || 0);
+            $('#greedCount').text(summary.greedCount || 0);
+            $('#fearCount').text(summary.fearCount || 0);
+            
+            // Update category counts
+            $('#bestCount').text(summary.bestCount || 0);
+            $('#betterCount').text(summary.betterCount || 0);
+            $('#goodCount').text(summary.goodCount || 0);
+            
+            // Show the summary section
+            $('#summary').show();
+        }
+        
+        // Function to update stars in the table
+        function updateTableStars() {
+            $('.table-star').each(function() {
+                const ticker = $(this).data('ticker');
+                const isFavorite = favorites.some(f => f.ticker === ticker);
+                $(this).toggleClass('favorite', isFavorite);
+            });
+        }
+
+        // Update favorites count badge
+        function updateFavoritesCount() {
+            const count = favorites.length;
+            $('#favoritesCount').text(count);
+            
+            // Change badge styling based on count
+            if (count > 0) {
+                $('#favoritesCount').removeClass('bg-secondary').addClass('bg-warning text-dark');
+                $('#favoritesBtn').removeClass('btn-outline-secondary').addClass('btn-outline-warning');
+            } else {
+                $('#favoritesCount').removeClass('bg-warning text-dark').addClass('bg-secondary');
+                $('#favoritesBtn').removeClass('btn-outline-warning').addClass('btn-outline-secondary');
+            }
+        }
+    </script>
+</body>
+</html> 
