@@ -54,27 +54,41 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             border-radius: 8px;
             overflow: hidden;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
-        #topChoices .card-header {
+        
+        #topChoices .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+        
+        #topChoices .best {
+            border-left: 5px solid #28a745;
+        }
+        
+        #topChoices .better {
+            border-left: 5px solid #17a2b8;
+        }
+        
+        #topChoices .good {
+            border-left: 5px solid #ffc107;
+        }
+        
+        #topChoices .card-title {
             font-weight: bold;
-            padding: 10px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
         }
-        #topChoices .card-body {
-            padding: 15px;
-        }
-        #topChoices .card p {
-            margin-bottom: 8px;
+        
+        #topChoices .card-text {
             font-size: 0.9rem;
         }
-        #topChoices .bg-success {
-            background-color: #28a745 !important;
-        }
-        #topChoices .bg-warning {
-            background-color: #ffc107 !important;
-        }
-        #topChoices .bg-light {
-            background-color: #f8f9fa !important;
-            border: 1px solid #ddd;
+        
+        #topChoices .badge {
+            font-size: 0.7rem;
+            padding: 4px 6px;
+            margin-left: 8px;
         }
         /* Favorites Styles */
         .favorite-star {
@@ -368,7 +382,8 @@
                             <strong>% Below:</strong> How far below current price the strike is (higher = safer)<br>
                             <strong>OTM Prob:</strong> Probability the option will expire worthless (higher = safer)<br>
                             <strong>IV:</strong> Implied volatility (higher = more premium but more risk)<br>
-                            <strong>RSI:</strong> Relative Strength Index (under 30 = oversold, over 70 = overbought)
+                            <strong>RSI:</strong> Relative Strength Index (under 30 = oversold, over 70 = overbought)<br>
+                            <strong>Fear/Greed (F/G):</strong> Market sentiment indicator (below 30 = extreme fear, above 70 = extreme greed)
                     </div>
                             </div>
                     <div class="col-md-3">
@@ -386,11 +401,28 @@
                             <strong>Return %:</strong> (Premium ÷ Strike) × 100 = return if option expires worthless<br>
                             <strong>OTM Prob:</strong> Probability the option will expire worthless<br>
                             <strong>IV:</strong> Implied volatility (higher = more premium but more risk)<br>
-                            <strong>RSI:</strong> Relative Strength Index (under 30 = potentially oversold, over 70 = potentially overbought)
+                            <strong>RSI:</strong> Relative Strength Index (under 30 = potentially oversold, over 70 = potentially overbought)<br>
+                            <strong>CSP Score:</strong> Weighted score (0-10) combining IV/HV ratio, RSI, premium quality, OTM probability, and technical support
                             </div>
                         </div>
                     </div>
                 </div>
+            
+            <div class="explanation-section">
+                <h4>CSP Score Calculation</h4>
+                <p>The CSP Quality Score (0-10) is calculated using a weighted formula with the following components:</p>
+                <ul>
+                    <li><strong>IV/HV Ratio (30%):</strong> Compares option pricing to historical volatility. Lower values (options priced below historical volatility) receive higher scores.</li>
+                    <li><strong>RSI (25%):</strong> Evaluates technical condition of the stock. Oversold conditions (RSI below 30) receive maximum scores.</li>
+                    <li><strong>Premium Quality (25%):</strong> Rates annualized return on capital. Higher annualized returns receive better scores.</li>
+                    <li><strong>OTM Probability (10%):</strong> Measures statistical likelihood of option expiring worthless. Higher probabilities (>90%) get higher scores.</li>
+                    <li><strong>Technical Support (10%):</strong> Assesses if strike price aligns with technical support levels. Strikes 5-10% below 50-day moving average receive highest scores.</li>
+                </ul>
+                <p>Each component is scored from 0-10, then weighted and combined for the final score:</p>
+                <div class="alert alert-secondary">
+                    <code>CSP Score = (IV/HV Score × 0.3) + (RSI Score × 0.25) + (Premium Score × 0.25) + (OTM Probability Score × 0.1) + (Support Score × 0.1)</code>
+                </div>
+            </div>
             
             <div class="explanation-section">
                 <h4>Tips for Success</h4>
@@ -679,6 +711,34 @@
                         const value = cell.getValue();
                         return value ? value.toFixed(1) : '0';
                     }, width: 70},
+                    {title: "F/G", field: "fear_greed", width: 80},
+                    {title: "CSP Score", field: "csp_quality_score", formatter: function(cell) {
+                        const score = cell.getValue();
+                        if (!score && score !== 0) return "";
+                        
+                        let className = '';
+                        let signal = '';
+                        
+                        if (score >= 9) {
+                            className = 'text-success fw-bold';
+                            signal = 'EXCEPTIONAL';
+                        } else if (score >= 7) {
+                            className = 'text-primary fw-bold';
+                            signal = 'EXCELLENT';
+                        } else if (score >= 5) {
+                            className = 'text-info fw-bold';
+                            signal = 'GOOD';
+                        } else if (score >= 3) {
+                            className = 'text-warning';
+                            signal = 'FAIR';
+                        } else {
+                            className = 'text-danger';
+                            signal = 'POOR';
+                        }
+                        
+                        return `<div><span class="${className}">${score.toFixed(1)}</span></div>
+                               <small class="${className}">${signal}</small>`;
+                    }, width: 120},
                     {title: "", field: "favorite", formatter: function(cell) {
                         const ticker = cell.getData().ticker;
                         const isFavorite = favorites.some(f => f.ticker === ticker);
@@ -1089,6 +1149,15 @@
                         }),
                         success: function(response) {
                             console.log('API response received:', response);
+                            
+                            // Debug the first few items to check for CSP quality score
+                            if (response.stocks && response.stocks.length > 0) {
+                                console.log('First item example:', response.stocks[0]);
+                                console.log('Has CSP quality score:', response.stocks[0].hasOwnProperty('csp_quality_score'));
+                                console.log('CSP quality score value:', response.stocks[0].csp_quality_score);
+                                console.log('CSP signal value:', response.stocks[0].csp_signal);
+                            }
+                            
                             // Update the table with the new data
                             updateTable(response.stocks);
                             updateSummary(response.summary);
@@ -1147,6 +1216,9 @@
                 table.clearData();
             }
             
+            // Update the Top Choices section with the top 3 picks
+            updateTopChoices(data);
+            
             // Initialize table if it doesn't exist
             if (!table) {
                 console.log('Initializing table');
@@ -1195,6 +1267,33 @@
                             return `<span class="${className}">${val ? val.toFixed(1) : ''}</span>`;
                         }, width: 80},
                         {title: "F/G", field: "fear_greed", width: 80},
+                        {title: "CSP Score", field: "csp_quality_score", formatter: function(cell) {
+                            const score = cell.getValue();
+                            if (!score && score !== 0) return "";
+                            
+                            let className = '';
+                            let signal = '';
+                            
+                            if (score >= 9) {
+                                className = 'text-success fw-bold';
+                                signal = 'EXCEPTIONAL';
+                            } else if (score >= 7) {
+                                className = 'text-primary fw-bold';
+                                signal = 'EXCELLENT';
+                            } else if (score >= 5) {
+                                className = 'text-info fw-bold';
+                                signal = 'GOOD';
+                            } else if (score >= 3) {
+                                className = 'text-warning';
+                                signal = 'FAIR';
+                            } else {
+                                className = 'text-danger';
+                                signal = 'POOR';
+                            }
+                            
+                            return `<div><span class="${className}">${score.toFixed(1)}</span></div>
+                                   <small class="${className}">${signal}</small>`;
+                        }, width: 120},
                         {title: "Strike", field: "strike", formatter: "money", formatterParams: {precision: 2}, width: 100},
                         {title: "Premium", field: "premium", formatter: "money", formatterParams: {precision: 2}, width: 100},
                         {title: "Return %", field: "return_percent", formatter: function(cell) {
@@ -1253,6 +1352,87 @@
             
             // Show the summary section
             $('#summary').show();
+        }
+        
+        // Function to update the Top Choices section
+        function updateTopChoices(data) {
+            console.log('updateTopChoices called with', data.length, 'items');
+            
+            // Clear existing content
+            $('#topChoicesContent').empty();
+            
+            if (!data || data.length === 0) {
+                console.log('No data available for Top Choices');
+                $('#topChoicesContent').html('<div class="col-md-12"><p class="text-center text-muted">No data available. Use the Refresh Data button to fetch CSP opportunities.</p></div>');
+                return;
+            }
+            
+            // Sort data by CSP quality score (if available) or by premium_per_day
+            const sortedData = [...data].sort((a, b) => {
+                if (a.csp_quality_score !== undefined && b.csp_quality_score !== undefined) {
+                    return b.csp_quality_score - a.csp_quality_score;
+                }
+                return b.premium_per_day - a.premium_per_day;
+            });
+            
+            console.log('Sorted data for top choices:', sortedData.slice(0, 3).map(item => ({
+                ticker: item.ticker,
+                csp_quality_score: item.csp_quality_score,
+                csp_signal: item.csp_signal,
+                premium_per_day: item.premium_per_day
+            })));
+            
+            // Take top 3
+            const topPicks = sortedData.slice(0, 3);
+            
+            // Display top picks
+            topPicks.forEach(pick => {
+                let scoreHtml = '';
+                if (pick.csp_quality_score !== undefined) {
+                    let scoreClass = '';
+                    let signal = '';
+                    
+                    if (pick.csp_quality_score >= 9) {
+                        scoreClass = 'text-success';
+                        signal = 'EXCEPTIONAL';
+                    } else if (pick.csp_quality_score >= 7) {
+                        scoreClass = 'text-primary';
+                        signal = 'EXCELLENT';
+                    } else if (pick.csp_quality_score >= 5) {
+                        scoreClass = 'text-info';
+                        signal = 'GOOD';
+                    } else if (pick.csp_quality_score >= 3) {
+                        scoreClass = 'text-warning';
+                        signal = 'FAIR';
+                    } else {
+                        scoreClass = 'text-danger';
+                        signal = 'POOR';
+                    }
+                    
+                    scoreHtml = `<div class="mt-2">
+                        <strong>CSP Score:</strong> <span class="${scoreClass} fw-bold">${pick.csp_quality_score.toFixed(1)}</span>
+                        <span class="badge ${scoreClass.replace('text-', 'bg-')}">${signal}</span>
+                    </div>`;
+                }
+                
+                $('#topChoicesContent').append(`
+                    <div class="col-md-4 mb-3">
+                        <div class="card top-pick-card ${pick.category ? pick.category.toLowerCase() : ''}">
+                            <div class="card-body">
+                                <h5 class="card-title">${pick.ticker} - ${pick.company}</h5>
+                                <div class="card-text">
+                                    <div><strong>Current:</strong> $${pick.current_price.toFixed(2)} | <strong>Strike:</strong> $${pick.strike.toFixed(2)}</div>
+                                    <div><strong>Premium:</strong> $${pick.premium.toFixed(2)} | <strong>$/Day:</strong> $${pick.premium_per_day.toFixed(2)}</div>
+                                    <div><strong>Expiry:</strong> ${pick.expiry} (${pick.days_to_expiry} days)</div>
+                                    <div><strong>OTM Prob:</strong> ${pick.otm_probability.toFixed(1)}% | <strong>Return:</strong> ${pick.return_percent.toFixed(2)}%</div>
+                                    <div><strong>Category:</strong> <span class="${pick.category === 'Best' ? 'text-success' : pick.category === 'Better' ? 'text-primary' : 'text-warning'} fw-bold">${pick.category || 'N/A'}</span></div>
+                                    ${scoreHtml}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
         }
         
         // Function to update stars in the table
