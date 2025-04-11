@@ -23,6 +23,8 @@ var/
 # Virtual Environment
 venv/
 ENV/
+.env
+.venv
 
 # IDE files
 .idea/
@@ -36,4 +38,5 @@ Thumbs.db
 
 # Project specific
 data_cache.json
-*.log 
+*.log
+*.cache
