@@ -1,0 +1,3 @@
+[submodule "sp500_analysis"]
+	path = sp500_analysis
+	url = https://github.com/Doby-byte/Stonk_Options.git 
