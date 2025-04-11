@@ -250,6 +250,19 @@
     <div class="container-fluid">
         <h1 class="mb-4">Cash-Secured Puts (CSP) Analysis</h1>
         
+        <!-- Analysis Guide Panel -->
+        <div class="alert alert-info mb-4">
+            <h5><i class="fas fa-info-circle"></i> Analysis Guide</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Fear/Greed (F/G):</strong> Market sentiment indicator that shows whether the stock is being driven by fear (bearish) or greed (bullish). Values below 30 indicate extreme fear, above 70 indicate extreme greed.</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>CSP Score:</strong> A weighted composite score (0-10) that evaluates the quality of a cash-secured put opportunity. Combines IV/HV ratio, RSI, premium quality, OTM probability, and technical support. Higher scores indicate better opportunities.</p>
+                </div>
+            </div>
+        </div>
+        
         <!-- Control Panel -->
         <div class="control-panel">
             <div class="btn-group">
@@ -275,29 +288,16 @@
                 </div>
                 <div class="col-md-2 mb-3">
                     <label for="timeframeSelect" class="form-label">Timeframe</label>
-<<<<<<< HEAD
-                    <!-- Default timeframe set to 2 weeks (14 days) for a balanced analysis period -->
-                    <select id="timeframeSelect" class="form-select">
-                        <option value="7">1 Week</option>
-                        <option value="14" selected>2 Weeks</option>
-                        <option value="30">1 Month</option>
-=======
                     <select id="timeframeSelect" class="form-select">
                         <option value="7">1 Week</option>
                         <option value="14">2 Weeks</option>
                         <option value="30" selected>1 Month</option>
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                         <option value="60">2 Months</option>
                     </select>
                 </div>
                 <div class="col-md-2 mb-3">
                     <label for="minOtmProb" class="form-label">Min OTM Probability (%)</label>
-<<<<<<< HEAD
-                    <!-- Default probability threshold set to 75% for moderate risk tolerance -->
-                    <input type="number" class="form-control" id="minOtmProb" value="75" min="0" max="100">
-=======
                     <input type="number" class="form-control" id="minOtmProb" value="90" min="0" max="100">
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                 </div>
                 <div class="col-md-2 mb-3">
                     <label for="maxBudget" class="form-label">Max Cash Required ($)</label>
@@ -347,21 +347,6 @@
                     </div>
                 </div>
             </div>
-<<<<<<< HEAD
-            
-            <!-- Top Choices Section -->
-            <div id="topChoices" class="mt-4">
-                <h4>Top Choices</h4>
-                <div class="row" id="topChoicesContent">
-                    <div class="col-md-12">
-                        <p class="text-center text-muted">Use the Refresh Data button to fetch top CSP opportunities</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Summary Section -->
-=======
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
             <div id="summary" class="mt-3">
                 <div class="alert alert-info">
                     <strong>Summary:</strong> Found 
@@ -372,8 +357,6 @@
                     <div class="mt-2">
                         <span class="badge bg-success"><span id="greedCount">0</span> Greed</span>
                         <span class="badge bg-danger"><span id="fearCount">0</span> Fear</span>
-<<<<<<< HEAD
-=======
                 </div>
             </div>
         </div>
@@ -384,7 +367,6 @@
                 <div class="row" id="topChoicesContent">
                     <div class="col-md-12">
                         <p class="text-center text-muted">Use the Refresh Data button to fetch top CSP opportunities</p>
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                     </div>
                 </div>
             </div>
@@ -413,8 +395,7 @@
                             <strong>% Below:</strong> How far below current price the strike is (higher = safer)<br>
                             <strong>OTM Prob:</strong> Probability the option will expire worthless (higher = safer)<br>
                             <strong>IV:</strong> Implied volatility (higher = more premium but more risk)<br>
-                            <strong>RSI:</strong> Relative Strength Index (under 30 = oversold, over 70 = overbought)<br>
-                            <strong>Fear/Greed (F/G):</strong> Market sentiment indicator (below 30 = extreme fear, above 70 = extreme greed)
+                            <strong>RSI:</strong> Relative Strength Index (under 30 = oversold, over 70 = overbought)
                     </div>
                             </div>
                     <div class="col-md-3">
@@ -432,53 +413,13 @@
                             <strong>Return %:</strong> (Premium ÷ Strike) × 100 = return if option expires worthless<br>
                             <strong>OTM Prob:</strong> Probability the option will expire worthless<br>
                             <strong>IV:</strong> Implied volatility (higher = more premium but more risk)<br>
-                            <strong>RSI:</strong> Relative Strength Index (under 30 = potentially oversold, over 70 = potentially overbought)<br>
-<<<<<<< HEAD
-                            <strong>Max 1D Move:</strong> Maximum single-day (24hr) price movement as a percentage in the last 30 days<br>
-                            <strong>Max 5D Move:</strong> Maximum 5-day (weekly) price movement as a percentage in the last 30 days<br>
-=======
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
-                            <strong>CSP Score:</strong> Weighted score (0-10) combining IV/HV ratio, RSI, premium quality, OTM probability, and technical support
+                            <strong>RSI:</strong> Relative Strength Index (under 30 = potentially oversold, over 70 = potentially overbought)
                             </div>
                         </div>
                     </div>
                 </div>
             
             <div class="explanation-section">
-                <h4>CSP Score Calculation</h4>
-                <p>The CSP Quality Score (0-10) is calculated using a weighted formula with the following components:</p>
-                <ul>
-                    <li><strong>IV/HV Ratio (30%):</strong> Compares option pricing to historical volatility. Lower values (options priced below historical volatility) receive higher scores.</li>
-                    <li><strong>RSI (25%):</strong> Evaluates technical condition of the stock. Oversold conditions (RSI below 30) receive maximum scores.</li>
-                    <li><strong>Premium Quality (25%):</strong> Rates annualized return on capital. Higher annualized returns receive better scores.</li>
-                    <li><strong>OTM Probability (10%):</strong> Measures statistical likelihood of option expiring worthless. Higher probabilities (>90%) get higher scores.</li>
-                    <li><strong>Technical Support (10%):</strong> Assesses if strike price aligns with technical support levels. Strikes 5-10% below 50-day moving average receive highest scores.</li>
-                </ul>
-                <p>Each component is scored from 0-10, then weighted and combined for the final score:</p>
-                <div class="alert alert-secondary">
-                    <code>CSP Score = (IV/HV Score × 0.3) + (RSI Score × 0.25) + (Premium Score × 0.25) + (OTM Probability Score × 0.1) + (Support Score × 0.1)</code>
-                </div>
-            </div>
-            
-            <div class="explanation-section">
-<<<<<<< HEAD
-                <h4>Historical Price Movement Metrics</h4>
-                <p>Understanding a stock's historical price movement is crucial for CSP strategies:</p>
-                <ul>
-                    <li><strong>Max 1-Day Movement (Max 1D Move):</strong> Shows the largest single-day price swing (High to Low) in the past 30 days. High values indicate significant intraday volatility that could lead to greater risk of assignment or larger position swings.</li>
-                    <li><strong>Max 5-Day Movement (Max 5D Move):</strong> Shows the largest price range over any 5-day (weekly) period in the past 30 days. This metric helps identify stocks with high short-term volatility that may exceed your risk tolerance.</li>
-                </ul>
-                <p>When selling Cash-Secured Puts, consider these metrics to assess actual price behavior beyond what implied volatility suggests:</p>
-                <ul>
-                    <li>Stocks with <strong>lower</strong> Max 1D and Max 5D values generally provide more reliable, predictable CSP opportunities</li>
-                    <li>Stocks with <strong>higher</strong> values may offer higher premiums but come with increased risk of significant price swings</li>
-                </ul>
-                <p class="alert alert-warning">An ideal CSP candidate would have high premiums (good IV) but relatively contained actual price movements (modest Max 1D and Max 5D values).</p>
-            </div>
-            
-            <div class="explanation-section">
-=======
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                 <h4>Tips for Success</h4>
                 <ol>
                     <li>Sell CSPs on stocks you wouldn't mind owning at the strike price</li>
@@ -761,33 +702,6 @@
                         const value = cell.getValue();
                         return value ? (value * 100).toFixed(1) + '%' : '0%';
                     }, width: 70},
-<<<<<<< HEAD
-                    
-                    // Max 1D Move column with enhanced date display showing the specific date when the max movement occurred
-                    {title: "Max 1D Move", field: "max_daily_move", sorter: "number", formatter: function(cell) {
-                        const value = cell.getValue();
-                        const date = cell.getData().max_daily_move_date || "N/A";
-                        if (!value && value !== 0) return "N/A";
-                        return `<div>${value.toFixed(1)}%</div><div><small class="text-muted">${date}</small></div>`;
-                    }, width: 110, tooltip: function(cell) {
-                        const date = cell.getData().max_daily_move_date || "N/A";
-                        return `Maximum single-day price movement (${cell.getValue()}%) occurred on ${date}`;
-                    }},
-                    
-                    // Max 5D Move column with enhanced date range display showing both start and end dates of the 5-day window
-                    {title: "Max 5D Move", field: "max_weekly_move", sorter: "number", formatter: function(cell) {
-                        const value = cell.getValue();
-                        const start = cell.getData().max_weekly_move_start || "N/A";
-                        const end = cell.getData().max_weekly_move_end || "N/A";
-                        if (!value && value !== 0) return "N/A";
-                        return `<div>${value.toFixed(1)}%</div><div><small class="text-muted">${start} to ${end}</small></div>`;
-                    }, width: 130, tooltip: function(cell) {
-                        const start = cell.getData().max_weekly_move_start || "N/A";
-                        const end = cell.getData().max_weekly_move_end || "N/A";
-                        return `Maximum 5-day price movement (${cell.getValue()}%) occurred between ${start} and ${end}`;
-                    }},
-=======
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                     {title: "RSI", field: "rsi", sorter: "number", formatter: function(cell) {
                         const value = cell.getValue();
                         return value ? value.toFixed(1) : '0';
@@ -820,6 +734,22 @@
                         return `<div><span class="${className}">${score.toFixed(1)}</span></div>
                                <small class="${className}">${signal}</small>`;
                     }, width: 120},
+                    {title: "Strike", field: "strike", formatter: "money", formatterParams: {precision: 2}, width: 100},
+                    {title: "Premium", field: "premium", formatter: "money", formatterParams: {precision: 2}, width: 100},
+                    {title: "Return %", field: "return_percent", formatter: function(cell) {
+                        return cell.getValue().toFixed(2) + '%';
+                    }, width: 100},
+                    {title: "$/Day", field: "premium_per_day", formatter: function(cell) {
+                        return '$' + cell.getValue().toFixed(2);
+                    }, width: 100},
+                    {title: "Prob", field: "otm_probability", formatter: function(cell) {
+                        return cell.getValue().toFixed(1) + '%';
+                    }, width: 80},
+                    {title: "Days", field: "days_to_expiry", width: 80},
+                    {title: "Expiry", field: "expiry", width: 120},
+                    {title: "IV", field: "implied_volatility", formatter: function(cell) {
+                        return (cell.getValue() * 100).toFixed(1) + '%';
+                    }, width: 80},
                     {title: "", field: "favorite", formatter: function(cell) {
                         const ticker = cell.getData().ticker;
                         const isFavorite = favorites.some(f => f.ticker === ticker);
@@ -1197,19 +1127,10 @@
                     
                     console.log('Stocks to refresh:', stocks);
                     
-<<<<<<< HEAD
-                    // Get filter values with new defaults:
-                    // - 75% min probability (lowered from 90% for less restrictive filtering)
-                    // - 14 days timeframe (changed from 30 days for shorter-term opportunities)
-                    const minProb = parseFloat($('#minOtmProb').val() || 75);
-                    const maxBudget = parseFloat($('#maxBudget').val() || 10000);
-                    const timeframeValue = parseInt($('#timeframeSelect').val() || 14);
-=======
                     // Get filter values
                     const minProb = parseFloat($('#minOtmProb').val() || 90);
                     const maxBudget = parseFloat($('#maxBudget').val() || 10000);
                     const timeframeValue = parseInt($('#timeframeSelect').val() || 30);
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                     
                     console.log('Filter values:', { minProb, maxBudget, timeframeValue });
                     
@@ -1400,33 +1321,6 @@
                         {title: "IV", field: "implied_volatility", formatter: function(cell) {
                             return (cell.getValue() * 100).toFixed(1) + '%';
                         }, width: 80},
-<<<<<<< HEAD
-                        
-                        // Max 1D Move column with enhanced date display showing the specific date when the max movement occurred
-                        {title: "Max 1D Move", field: "max_daily_move", formatter: function(cell) {
-                            const value = cell.getValue();
-                            const date = cell.getData().max_daily_move_date || "N/A";
-                            if (!value && value !== 0) return "N/A";
-                            return `<div>${value.toFixed(1)}%</div><div><small class="text-muted">${date}</small></div>`;
-                        }, width: 110, tooltip: function(cell) {
-                            const date = cell.getData().max_daily_move_date || "N/A";
-                            return `Maximum single-day price movement (${cell.getValue()}%) occurred on ${date}`;
-                        }},
-                        
-                        // Max 5D Move column with enhanced date range display showing both start and end dates of the 5-day window
-                        {title: "Max 5D Move", field: "max_weekly_move", formatter: function(cell) {
-                            const value = cell.getValue();
-                            const start = cell.getData().max_weekly_move_start || "N/A";
-                            const end = cell.getData().max_weekly_move_end || "N/A";
-                            if (!value && value !== 0) return "N/A";
-                            return `<div>${value.toFixed(1)}%</div><div><small class="text-muted">${start} to ${end}</small></div>`;
-                        }, width: 130, tooltip: function(cell) {
-                            const start = cell.getData().max_weekly_move_start || "N/A";
-                            const end = cell.getData().max_weekly_move_end || "N/A";
-                            return `Maximum 5-day price movement (${cell.getValue()}%) occurred between ${start} and ${end}`;
-                        }},
-=======
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                     ],
                     rowClick: function(e, row) {
                         // Toggle row selection
@@ -1542,10 +1436,6 @@
                                     <div><strong>Premium:</strong> $${pick.premium.toFixed(2)} | <strong>$/Day:</strong> $${pick.premium_per_day.toFixed(2)}</div>
                                     <div><strong>Expiry:</strong> ${pick.expiry} (${pick.days_to_expiry} days)</div>
                                     <div><strong>OTM Prob:</strong> ${pick.otm_probability.toFixed(1)}% | <strong>Return:</strong> ${pick.return_percent.toFixed(2)}%</div>
-<<<<<<< HEAD
-                                    <div><strong>Volatility:</strong> IV ${(pick.implied_volatility * 100).toFixed(1)}% | <strong>Max Moves:</strong> 1-Day ${pick.max_daily_move?.toFixed(1) || '0.0'}%, 5-Day ${pick.max_weekly_move?.toFixed(1) || '0.0'}%</div>
-=======
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                                     <div><strong>Category:</strong> <span class="${pick.category === 'Best' ? 'text-success' : pick.category === 'Better' ? 'text-primary' : 'text-warning'} fw-bold">${pick.category || 'N/A'}</span></div>
                                     ${scoreHtml}
                                 </div>
