@@ -251,10 +251,7 @@
         <div class="d-flex justify-content-between">
             <h2>Cash-Secured Puts (CSP) Analysis</h2>
             <div>
-                <button id="refreshButton" class="btn btn-primary mb-3">
-                    <i class="fas fa-sync-alt me-2"></i> Refresh Data
-                </button>
-                <button id="askAIButton" class="btn btn-success mb-3 ms-2" disabled>
+                <button id="askAIButton" class="btn btn-success mb-3 ms-2">
                     <i class="fas fa-robot me-2"></i> Ask AI
                 </button>
             </div>
@@ -263,7 +260,7 @@
         <!-- Control Panel -->
         <div class="control-panel">
             <div class="btn-group">
-                <button class="btn btn-primary" id="refresh">
+                <button class="btn btn-primary" id="refreshButton">
                     <span id="loadingSpinner" class="spinner-border spinner-border-sm me-2" role="status" style="display: none;"></span>
                     <i class="fas fa-sync-alt"></i> Refresh Data
                 </button>
@@ -664,13 +661,17 @@
             const aiModal = new bootstrap.Modal(document.getElementById('aiRecommendationModal'));
             const regenerateButton = $('#regenerateAiButton');
             
-            // Enable the Ask AI button after data is loaded
-            $(document).on('dataLoaded', function() {
-                askAIButton.prop('disabled', false);
-            });
+            // Initially disable the Ask AI button until data is loaded
+            askAIButton.prop('disabled', true);
             
             // Handle Ask AI button click
             askAIButton.on('click', function() {
+                // Only proceed if we have data
+                if (!optionsData || optionsData.length === 0) {
+                    alert('Please refresh data first before asking for AI recommendations');
+                    return;
+                }
+                
                 // Show the modal
                 aiModal.show();
                 
@@ -803,7 +804,7 @@
             console.log('Document ready');
             
             // Debug refresh functionality
-            console.log('Refresh button:', $('#refresh').length ? 'Found' : 'Not found');
+            console.log('Refresh button:', $('#refreshButton').length ? 'Found' : 'Not found');
             
             // Initialize Select2 for stock selection
             $('#stockSelect').select2({
@@ -1331,7 +1332,7 @@
                         const finalSelection = $('#stockSelect').val();
                         if (finalSelection && finalSelection.length > 0) {
                             console.log(`Triggering refresh with ${finalSelection.length} stocks selected`);
-                            $('#refresh').click();
+                            $('#refreshButton').click();
                 } else {
                             console.warn('Cannot refresh - no stocks selected');
                         }
@@ -1490,7 +1491,7 @@
             });
             
             // Refresh button
-            $('#refresh').click(function() {
+            $('#refreshButton').click(function() {
                 console.log('Refresh button clicked!');
                 
                 try {
@@ -1970,6 +1971,42 @@
                 $('#favoritesCount').removeClass('bg-warning text-dark').addClass('bg-secondary');
                 $('#favoritesBtn').removeClass('btn-outline-warning').addClass('btn-outline-secondary');
             }
+        }
+
+        function loadData(callback) {
+            $.post('/api/data', {
+                min_otm_probability: $('#minOtmProbability').val(),
+                max_cash_required: $('#maxCashRequired').val(),
+                timeframe: $('#timeframe').val()
+            }, function(data) {
+                console.log('Data loaded successfully');
+                optionsData = data.options;
+                
+                renderTable(optionsData);
+                updateSummary(data.summary);
+                updateTopChoices(data.top_choices);
+                
+                // Set refresh status to complete
+                refreshInProgress = false;
+                $('#refreshButton').html('<i class="fas fa-sync-alt"></i> Refresh Data').prop('disabled', false);
+                
+                // Enable the Ask AI button
+                $('#askAIButton').prop('disabled', false);
+                
+                // Execute the callback if provided
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                console.error('Error loading data:', errorThrown);
+                $('#errorToastBody').text('Error loading data: ' + errorThrown);
+                new bootstrap.Toast(document.getElementById('errorToast')).show();
+                
+                // Reset the refresh button
+                $('#refreshButton').html('<i class="fas fa-sync-alt"></i> Refresh Data').prop('disabled', false);
+                refreshInProgress = false;
+            });
         }
     </script>
 </body>
