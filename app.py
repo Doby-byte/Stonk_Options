@@ -1324,20 +1324,43 @@ def get_data_post():
                         premium_percent = premium / strike * 100
                         premium_per_day = premium / days_to_expiry if days_to_expiry > 0 else 0
                         
-                        # Determine category based on CSP criteria
+                        # Determine category based on hybrid CSP criteria
                         category = 'None'
                         percent_below = ((stock_data['price'] - strike) / stock_data['price']) * 100
                         
-                        if otm_prob >= 0.85 and premium_per_day >= 0.15 and percent_below >= 8 and iv >= 0.4 and iv <= 0.8:
-                            category = 'Best'
-                            summary['bestCount'] += 1
-                        elif otm_prob >= 0.75 and premium_per_day >= 0.25 and percent_below >= 5 and iv >= 0.5 and iv <= 1.0:
-                            category = 'Better'
-                            summary['betterCount'] += 1
-                        elif otm_prob >= 0.65 and premium_per_day >= 0.40:
-                            category = 'Good'
-                            summary['goodCount'] += 1
-                            
+                        # Calculate support quality
+                        if stock_data['ma50'] > 0:
+                            strike_to_ma_ratio = strike / stock_data['ma50']
+                            # Define support quality levels
+                            if strike_to_ma_ratio <= 0.90:  # Strike is 10% or more below 50MA (strong support)
+                                support_quality = "excellent"
+                            elif strike_to_ma_ratio <= 0.95:
+                                support_quality = "good"
+                            elif strike_to_ma_ratio <= 1.0:
+                                support_quality = "moderate"
+                            else:
+                                support_quality = "weak"
+                        else:
+                            support_quality = "unknown"
+                        
+                        # Use 85% probability threshold across all categories
+                        if otm_prob >= 0.85:
+                            # Best: Premium ≥ $0.20/day AND excellent support
+                            if premium_per_day >= 0.20 and support_quality == "excellent":
+                                category = 'Best'
+                                summary['bestCount'] += 1
+                            # Better: Premium ≥ $0.15/day AND good or excellent support
+                            elif premium_per_day >= 0.15 and (support_quality == "good" or support_quality == "excellent"):
+                                category = 'Better'
+                                summary['betterCount'] += 1
+                            # Good: Premium ≥ $0.10/day (regardless of support quality)
+                            elif premium_per_day >= 0.10:
+                                category = 'Good'
+                                summary['goodCount'] += 1
+                        
+                        # Store support quality for display
+                        support_quality_display = support_quality.capitalize()
+                        
                         # Create the option result
                         option_result = {
                             'strike': strike,
@@ -1349,7 +1372,8 @@ def get_data_post():
                             'premium_per_day': premium_per_day,
                             'implied_volatility': iv,
                             'percent_below': percent_below,
-                            'category': category
+                            'category': category,
+                            'support_quality': support_quality_display
                         }
                         
                         # Add stock data to the option

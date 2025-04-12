@@ -297,45 +297,6 @@
         <!-- Recommendations Panel -->
         <div class="recommendations-panel">
             <h3>CSP Strategy Recommendations</h3>
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="recommendation-card best-card">
-                        <h4>Best CSP Opportunities</h4>
-                        <ul>
-                            <li>OTM probability: 85%+</li>
-                            <li>Premium/day: $15+</li>
-                            <li>Strike price: 8%+ below current</li>
-                            <li>IV: 40-80%</li>
-                        </ul>
-                        <p><small>Balanced quality plays that offer good protection with reasonable returns</small></p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="recommendation-card better-card">
-                        <h4>Better CSP Opportunities</h4>
-                        <ul>
-                            <li>OTM probability: 75%+</li>
-                            <li>Premium/day: $25+</li>
-                            <li>Strike price: 5%+ below current</li>
-                            <li>IV: 50-100%</li>
-                        </ul>
-                        <p><small>Value opportunity plays with stronger returns but moderate risk</small></p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="recommendation-card good-card">
-                        <h4>Good CSP Opportunities</h4>
-                        <ul>
-                            <li>OTM probability: 65%+</li>
-                            <li>Premium/day: $40+</li>
-                            <li>Strike price: Any below current</li>
-                            <li>IV: Any level</li>
-                        </ul>
-                        <p><small>Tactical high-return plays with higher risk for aggressive strategies</small></p>
-                    </div>
-                </div>
-            </div>
-            
             <!-- Top Choices Section -->
             <div id="topChoices" class="mt-4">
                 <h4>Top Choices</h4>
@@ -412,6 +373,53 @@
                         </div>
                     </div>
                 </div>
+            
+            <div class="explanation-section">
+                <h4>CSP Opportunity Categories</h4>
+                <p>The tool categorizes CSP opportunities into three tiers using a hybrid approach that combines premium per day with support quality:</p>
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Category</th>
+                            <th>OTM Probability</th>
+                            <th>Premium/Day</th>
+                            <th>Support Quality</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="table-success">
+                            <td><strong>Best</strong></td>
+                            <td>≥ 85%</td>
+                            <td>≥ $0.20/day</td>
+                            <td>Excellent</td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td><strong>Better</strong></td>
+                            <td>≥ 85%</td>
+                            <td>≥ $0.15/day</td>
+                            <td>Good or Excellent</td>
+                        </tr>
+                        <tr class="table-warning">
+                            <td><strong>Good</strong></td>
+                            <td>≥ 85%</td>
+                            <td>≥ $0.10/day</td>
+                            <td>Any</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h5>Support Quality Levels</h5>
+                <ul>
+                    <li><strong>Excellent:</strong> Strike price is 10% or more below the 50-day moving average (MA50)</li>
+                    <li><strong>Good:</strong> Strike price is 5-10% below MA50</li>
+                    <li><strong>Moderate:</strong> Strike price is 0-5% below MA50</li>
+                    <li><strong>Weak:</strong> Strike price is above MA50</li>
+                </ul>
+                <p class="alert alert-info">
+                    This hybrid approach prioritizes both absolute returns (premium per day) and risk management (technical support levels),
+                    ensuring that the best opportunities have solid technical support along with attractive premiums.
+                </p>
+            </div>
             
             <div class="explanation-section">
                 <h4>CSP Score Calculation</h4>
@@ -727,6 +735,22 @@
                         return `${value.toFixed(2)}%`;
                     }, width: 90, tooltip: "Percentage below current price"},
                     
+                    // Add Support Quality column
+                    {title: "Support", field: "support_quality", formatter: function(cell) {
+                        const value = cell.getValue();
+                        let colorClass = "";
+                        
+                        switch(value) {
+                            case 'Excellent': colorClass = "text-success"; break;
+                            case 'Good': colorClass = "text-primary"; break;
+                            case 'Moderate': colorClass = "text-info"; break;
+                            case 'Weak': colorClass = "text-warning"; break;
+                            default: colorClass = "text-muted";
+                        }
+                        
+                        return `<span class="${colorClass} fw-bold">${value || 'Unknown'}</span>`;
+                    }, width: 90, tooltip: "Quality of technical support at strike price based on MA50 distance"},
+                    
                     // KEY OPTION METRICS GROUP
                     {title: "Premium", field: "premium", sorter: "number", formatter: function(cell) {
                         return `$${cell.getValue().toFixed(2)}`;
@@ -788,6 +812,22 @@
                         
                         return tooltip;
                     }},
+                    
+                    // Add Category column
+                    {title: "Category", field: "category", sorter: "string", formatter: function(cell) {
+                        const value = cell.getValue();
+                        if (!value) return "N/A";
+                        
+                        let colorClass = "";
+                        switch(value) {
+                            case 'Best': colorClass = "text-success"; break;
+                            case 'Better': colorClass = "text-primary"; break;
+                            case 'Good': colorClass = "text-warning"; break;
+                            default: colorClass = "text-muted";
+                        }
+                        
+                        return `<span class="${colorClass} fw-bold">${value}</span>`;
+                    }, width: 90, tooltip: "CSP opportunity category based on OTM probability, premium/day, and support quality"},
                     
                     {title: "Prob", field: "otm_probability", sorter: "number", formatter: function(cell) {
                         return `${cell.getValue().toFixed(1)}%`;
@@ -1562,9 +1602,13 @@
                                     <div><strong>Expiry:</strong> ${pick.expiry} (${pick.days_to_expiry} days)</div>
                                     <div><strong>OTM Prob:</strong> ${pick.otm_probability.toFixed(1)}% | <strong>Return:</strong> ${pick.return_percent.toFixed(2)}%</div>
                                     <div><strong>Volatility:</strong> IV ${(pick.implied_volatility * 100).toFixed(1)}% | <strong>MA50:</strong> $${pick.ma50?.toFixed(2) || 'N/A'}</div>
+                                    <div><strong>% Below:</strong> ${pick.percent_below.toFixed(2)}% | <strong>Support Quality:</strong> <span class="${getColorForSupport(pick.support_quality)}">${pick.support_quality || 'Unknown'}</span></div>
                                     <div><strong>Max 1D Move:</strong> ${pick.max_daily_move?.toFixed(1) || '0.0'}% on ${pick.max_daily_move_date || 'N/A'}</div>
                                     <div><strong>Max 5D Move:</strong> ${pick.max_weekly_move?.toFixed(1) || '0.0'}% (${pick.max_weekly_move_start || 'N/A'} to ${pick.max_weekly_move_end || 'N/A'})</div>
-                                    <div><strong>Category:</strong> <span class="${pick.category === 'Best' ? 'text-success' : pick.category === 'Better' ? 'text-primary' : 'text-warning'} fw-bold">${pick.category || 'N/A'}</span></div>
+                                    <div><strong>Category:</strong> <span class="${getCategoryColorClass(pick.category)}">${pick.category || 'N/A'}</span></div>
+                                    <div class="small text-muted">
+                                        ${getCategoryDescription(pick.category, pick.premium_per_day)}
+                                    </div>
                                     ${scoreHtml}
                                     <div class="mt-2">
                                         <strong>CSP Score Components:</strong>
@@ -1582,6 +1626,41 @@
                     </div>
                 `);
             });
+        }
+        
+        // Helper function to get color class for support quality
+        function getColorForSupport(quality) {
+            switch(quality) {
+                case 'Excellent': return 'text-success fw-bold';
+                case 'Good': return 'text-primary fw-bold';
+                case 'Moderate': return 'text-info';
+                case 'Weak': return 'text-warning';
+                default: return 'text-muted';
+            }
+        }
+        
+        // Helper function to get color class for category
+        function getCategoryColorClass(category) {
+            switch(category) {
+                case 'Best': return 'text-success fw-bold';
+                case 'Better': return 'text-primary fw-bold';
+                case 'Good': return 'text-warning fw-bold';
+                default: return 'text-muted';
+            }
+        }
+        
+        // Helper function to get description for category
+        function getCategoryDescription(category, premiumPerDay) {
+            switch(category) {
+                case 'Best': 
+                    return '85%+ OTM probability, $0.20+/day premium, excellent support';
+                case 'Better': 
+                    return '85%+ OTM probability, $0.15+/day premium, good/excellent support';
+                case 'Good': 
+                    return '85%+ OTM probability, $0.10+/day premium';
+                default: 
+                    return '';
+            }
         }
         
         // Function to update stars in the table
