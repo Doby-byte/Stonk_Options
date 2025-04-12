@@ -44,6 +44,18 @@ from sp500_stocks import get_stock_list, get_stock_by_ticker
 import math
 import dateutil.parser as parser
 import random
+import os
+from dotenv import load_dotenv
+import google.generativeai as genai
+
+# Load environment variables from .env file
+load_dotenv()
+# Configure API key for Google Generative AI
+genai_api_key = os.getenv("GENAI_API_KEY")
+if genai_api_key:
+    genai.configure(api_key=genai_api_key)
+else:
+    logger.warning("GENAI_API_KEY not found in environment variables. AI recommendation feature will not work.")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -1602,17 +1614,62 @@ def get_options_data():
 
 @app.route('/api/stocks')
 def get_stocks():
+    """Return list of available stocks for selection."""
+    stocks = get_stock_list()
+    return jsonify({"stocks": stocks})
+
+@app.route('/api/ai-recommendation', methods=['POST'])
+def ai_recommendation():
     """
-    Return the list of available S&P 500 stocks.
+    Get AI-powered recommendation for CSP opportunities.
     
-    This endpoint provides the complete list of stocks that can be
-    analyzed by the application. It uses the list from sp500_stocks.py.
+    This endpoint takes the current stocks data and user preferences,
+    then asks the AI model to analyze and recommend the best CSP opportunity.
+    
+    Request JSON parameters:
+    - risk_tolerance (str, optional): User's risk preference ('conservative', 'moderate', or 'aggressive')
     
     Returns:
-        Response: JSON response containing:
-            - stocks: List of stock objects with ticker and name
+        JSON with AI recommendation details
     """
-    return jsonify({'stocks': get_stock_list()})
+    try:
+        # Get request data
+        data = request.json or {}
+        risk_tolerance = data.get('risk_tolerance', 'moderate')
+        
+        # Validate risk tolerance
+        valid_tolerances = ['conservative', 'moderate', 'aggressive']
+        if risk_tolerance not in valid_tolerances:
+            risk_tolerance = 'moderate'
+        
+        # Check if we have data
+        if not sp500_data:
+            return jsonify({
+                "success": False,
+                "error": "No stock data available. Please refresh data first."
+            }), 400
+        
+        # Get AI recommendation
+        result = get_ai_recommendation(sp500_data, risk_tolerance)
+        
+        if 'error' in result and result.get('recommendation') is None:
+            return jsonify({
+                "success": False,
+                "error": result['error']
+            }), 500
+            
+        return jsonify({
+            "success": True,
+            "recommendation": result['recommendation']
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in AI recommendation endpoint: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": f"Server error: {str(e)}"
+        }), 500
 
 def open_browser(port=8086):
     """
@@ -1811,6 +1868,178 @@ def calculate_csp_quality_score(iv, hv, rsi, premium_per_day, otm_probability, s
     except Exception as e:
         logging.error(f"Error calculating CSP quality score: {str(e)}")
         return 0, {}
+
+def get_ai_recommendation(stocks_data, risk_tolerance='moderate'):
+    """
+    Get AI-powered recommendation based on current stock data and market conditions.
+    
+    This function sends the current stock data, technical indicators, and market sentiment
+    to the Google Generative AI model (Gemini) and requests a stock recommendation.
+    
+    Args:
+        stocks_data (list): List of processed stock data with options chains and technical indicators
+        risk_tolerance (str): User's risk tolerance level ('conservative', 'moderate', or 'aggressive')
+        
+    Returns:
+        dict: AI recommendation including:
+            - recommended_stock (dict): The recommended stock data
+            - reasoning (str): Explanation for the recommendation
+            - confidence (float): Confidence score (0-1)
+            - market_sentiment (str): Current market sentiment assessment
+    """
+    if not genai_api_key:
+        logger.error("Cannot get AI recommendation: GENAI_API_KEY not configured")
+        return {
+            "error": "API key not configured",
+            "recommendation": None
+        }
+    
+    try:
+        # Select top 5 stocks by CSP quality score for processing efficiency
+        if stocks_data:
+            # Filter to only stocks with options data
+            valid_stocks = [s for s in stocks_data if 'options' in s and s['options']]
+            # Sort by CSP quality score (if available)
+            sorted_stocks = sorted(valid_stocks, 
+                                key=lambda x: x.get('csp_quality_score', 0), 
+                                reverse=True)
+            # Get top 5 for processing
+            top_stocks = sorted_stocks[:5] if len(sorted_stocks) > 5 else sorted_stocks
+        else:
+            return {
+                "error": "No stock data available",
+                "recommendation": None
+            }
+        
+        # Get current market data and sentiment indicators
+        now = datetime.now().strftime("%Y-%m-%d")
+        rsi_values = [s.get('rsi', 50) for s in stocks_data if 'rsi' in s]
+        avg_market_rsi = sum(rsi_values) / len(rsi_values) if rsi_values else 50
+        
+        # Format data for the AI prompt
+        stock_summaries = []
+        for stock in top_stocks:
+            ticker = stock.get('ticker', 'Unknown')
+            company_name = stock.get('company_name', 'Unknown Company')
+            current_price = stock.get('current_price', 0)
+            rsi = stock.get('rsi', 0)
+            ma50 = stock.get('ma50', 0)
+            ma200 = stock.get('ma200', 0)
+            csp_score = stock.get('csp_quality_score', 0)
+            category = stock.get('category', 'N/A')
+            
+            # Get best option for this stock
+            best_option = None
+            if 'options' in stock and stock['options']:
+                sorted_options = sorted(stock['options'], 
+                                     key=lambda x: x.get('premium_per_day', 0),
+                                     reverse=True)
+                if sorted_options:
+                    best_option = sorted_options[0]
+            
+            option_details = ""
+            if best_option:
+                option_details = f"""
+                Best CSP Option:
+                - Strike: ${best_option.get('strike', 0)}
+                - Premium: ${best_option.get('premium', 0)}
+                - Premium/day: ${best_option.get('premium_per_day', 0):.2f}
+                - OTM Probability: {best_option.get('otm_probability', 0):.1f}%
+                - Expiration: {best_option.get('expiration_date', 'Unknown')}
+                """
+            
+            summary = f"""
+            {ticker} ({company_name}):
+            - Current Price: ${current_price}
+            - RSI: {rsi:.1f}
+            - MA50: ${ma50:.2f}
+            - MA200: ${ma200:.2f}
+            - CSP Quality Score: {csp_score:.1f}/10
+            - Category: {category}
+            {option_details}
+            """
+            stock_summaries.append(summary)
+        
+        # Create the prompt for Gemini
+        prompt = f"""
+        You are a financial advisor specializing in options trading, particularly Cash-Secured Puts (CSP) strategies.
+        
+        Current date: {now}
+        Average market RSI: {avg_market_rsi:.1f}
+        User's risk tolerance: {risk_tolerance}
+        
+        Analyze these top stocks for CSP opportunities:
+        
+        {"".join(stock_summaries)}
+        
+        Based on this data, recommend ONE specific stock and options contract for a Cash-Secured Put (CSP) strategy.
+        Consider the user's risk tolerance of '{risk_tolerance}' in your recommendation.
+        
+        Your recommendation should include:
+        1. The single best stock ticker to sell a CSP on
+        2. The specific strike price and expiration to recommend
+        3. 3-5 bullet points explaining your reasoning
+        4. A confidence score (1-5) for your recommendation
+        5. Brief assessment of current market conditions
+        
+        Format your response as JSON with these fields:
+        ticker, strike_price, expiration_date, reasoning_bullets (array), confidence_score, market_assessment
+        """
+        
+        # Set up the model and parameters
+        generation_config = {
+            "temperature": 0.2,
+            "top_p": 0.8,
+            "top_k": 40,
+            "max_output_tokens": 1024,
+        }
+        
+        # Get response from Gemini
+        model = genai.GenerativeModel(
+            model_name="models/gemini-1.5-flash",
+            generation_config=generation_config
+        )
+        response = model.generate_content(prompt)
+        
+        # Process the response (assuming JSON format)
+        try:
+            import json
+            result = json.loads(response.text)
+            
+            # Find the stock data for the recommended ticker
+            recommended_stock = next((s for s in stocks_data if s['ticker'] == result['ticker']), None)
+            
+            # Construct the final recommendation
+            recommendation = {
+                "recommended_stock": recommended_stock,
+                "ticker": result['ticker'],
+                "strike_price": result['strike_price'],
+                "expiration_date": result['expiration_date'],
+                "reasoning": result['reasoning_bullets'],
+                "confidence": result['confidence_score'],
+                "market_sentiment": result['market_assessment']
+            }
+            
+            return {
+                "success": True,
+                "recommendation": recommendation
+            }
+            
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(f"Error parsing AI response: {e}")
+            logger.error(f"Raw response: {response.text}")
+            return {
+                "error": f"Failed to parse AI response: {str(e)}",
+                "raw_response": response.text,
+                "recommendation": None
+            }
+            
+    except Exception as e:
+        logger.error(f"Error getting AI recommendation: {e}")
+        return {
+            "error": f"Error getting AI recommendation: {str(e)}",
+            "recommendation": None
+        }
 
 if __name__ == '__main__':
     """
