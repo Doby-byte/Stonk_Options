@@ -309,7 +309,7 @@
             <h3>CSP Strategy Recommendations</h3>
             <!-- Top Choices Section -->
             <div id="topChoices" class="mt-4">
-                <h4>Top Choices</h4>
+                <h4>Top 5 Choices</h4>
                 <div class="row" id="topChoicesContent">
                     <div class="col-md-12">
                         <p class="text-center text-muted">Use the Refresh Data button to fetch top CSP opportunities</p>
@@ -429,7 +429,7 @@
                     This hybrid approach prioritizes both absolute returns (premium per day) and risk management (technical support levels),
                     ensuring that the best opportunities have solid technical support along with attractive premiums.
                 </p>
-            </div>
+                </div>
             
             <div class="explanation-section">
                 <h4>CSP Score Calculation</h4>
@@ -702,99 +702,167 @@
             
             // Function to fetch AI recommendation
             function fetchAIRecommendation(riskTolerance) {
-                $.ajax({
-                    url: '/api/ai-recommendation',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ risk_tolerance: riskTolerance }),
-                    success: function(response) {
-                        if (response.success && response.recommendation) {
-                            displayAIRecommendation(response.recommendation);
-                        } else {
-                            // Show error message
-                            $('#aiLoadingSpinner').addClass('d-none');
-                            $('#aiErrorMessage').removeClass('d-none').text(response.error || 'Failed to get AI recommendation');
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        // Show error message
-                        $('#aiLoadingSpinner').addClass('d-none');
-                        $('#aiErrorMessage').removeClass('d-none').text('Error: ' + (xhr.responseJSON?.error || error));
-                        console.error('AI recommendation error:', error);
-                    }
-                });
-            }
-            
-            // Function to display AI recommendation
-            function displayAIRecommendation(recommendation) {
-                // Hide loading spinner
-                $('#aiLoadingSpinner').addClass('d-none');
+                console.log("Fetching AI recommendation with stocks data:", window.optionsData ? `${window.optionsData.length} stocks` : "No data");
                 
-                // Get the stock data
-                const stock = recommendation.recommended_stock || {};
-                
-                // Fill in the ticker and company info
-                $('#aiTickerSymbol').text(recommendation.ticker);
-                $('#aiCompanyName').text(stock.company_name || '');
-                $('#aiStrikePrice').text(recommendation.strike_price);
-                $('#aiExpirationDate').text(recommendation.expiration_date);
-                
-                // Fill in metrics
-                $('#aiCurrentPrice').text('$' + (stock.current_price || '0.00').toFixed(2));
-                
-                // Find the specific option that matches the recommendation
-                const recommendedOption = findRecommendedOption(stock, recommendation.strike_price, recommendation.expiration_date);
-                
-                if (recommendedOption) {
-                    $('#aiPremiumPerDay').text('$' + (recommendedOption.premium_per_day || 0).toFixed(2));
-                    $('#aiOtmProbability').text((recommendedOption.otm_probability || 0).toFixed(1) + '%');
-                } else {
-                    $('#aiPremiumPerDay').text('$0.00');
-                    $('#aiOtmProbability').text('N/A');
+                // Check if we have stock data first
+                if (!window.optionsData || window.optionsData.length === 0) {
+                    showAIError("No stock data available. Please refresh data first.");
+                    return;
                 }
                 
-                $('#aiCspScore').text((stock.csp_quality_score || 0).toFixed(1));
-                $('#aiCategory').text(stock.category || 'N/A');
-                
-                // Add reasoning bullets
-                const reasoningList = $('#aiReasoningList');
-                reasoningList.empty();
-                
-                if (Array.isArray(recommendation.reasoning)) {
-                    recommendation.reasoning.forEach(reason => {
-                        reasoningList.append(`<li>${reason}</li>`);
-                    });
-                }
-                
-                // Add market assessment
-                $('#aiMarketAssessment').text(recommendation.market_sentiment || 'No market assessment available');
-                
-                // Add confidence score stars
-                const confidenceScore = Math.min(Math.max(1, recommendation.confidence || 3), 5);
-                const confidenceDiv = $('#aiConfidenceScore');
-                confidenceDiv.empty();
-                
-                for (let i = 1; i <= 5; i++) {
-                    const starClass = i <= confidenceScore ? 'text-warning' : 'text-muted';
-                    confidenceDiv.append(`<i class="fas fa-star ${starClass} mx-1"></i>`);
-                }
-                
-                // Show the recommendation content
+                // Show loading state
                 $('#aiRecommendationContent').removeClass('d-none');
+                $('#aiLoadingSpinner').removeClass('d-none');
+                
+                // Transform the data structure to what the backend expects
+                // Backend expects an array of stock objects, each with an 'options' array
+                const stocksMap = {};
+                
+                // Group options by ticker
+                window.optionsData.forEach(option => {
+                    const ticker = option.ticker;
+                    if (!stocksMap[ticker]) {
+                        // Create a new stock entry
+                        stocksMap[ticker] = {
+                            ticker: ticker,
+                            company: option.company,
+                            current_price: option.current_price,
+                            rsi: option.rsi,
+                            ma50: option.ma50,
+                            category: option.category,
+                            csp_quality_score: option.csp_quality_score,
+                            options: []
+                        };
+                    }
+                    
+                    // Add this option to the stock's options array
+                    stocksMap[ticker].options.push({
+                        strike: option.strike,
+                        premium: option.premium,
+                        premium_per_day: option.premium_per_day,
+                        otm_probability: option.otm_probability,
+                        expiry: option.expiry,
+                        days_to_expiry: option.days_to_expiry
+                    });
+                });
+                
+                // Convert the map to an array
+                const transformedStocksData = Object.values(stocksMap);
+                
+                console.log(`Transformed ${window.optionsData.length} options into ${transformedStocksData.length} stocks with options arrays`);
+                
+                // Prepare the request
+                const requestData = {
+                    stocks_data: transformedStocksData,
+                    risk_tolerance: riskTolerance
+                };
+                
+                console.log(`Sending AI request with risk tolerance: ${riskTolerance}`);
+                
+                // Call the API
+                fetch('/api/recommendation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`Server error: ${response.status} - ${text}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("AI recommendation response:", data);
+                    
+                    // Check if we have a recommendation
+                    if (data.recommendation) {
+                        let warningMsg = '';
+                        
+                        // Check if we have a warning (fallback recommendation)
+                        if (data.warning) {
+                            warningMsg = `<div class="alert alert-warning mt-2">
+                                <strong>Note:</strong> ${data.warning}
+                            </div>`;
+                        }
+                        
+                        const recommendation = data.recommendation;
+                        const ticker = recommendation.ticker;
+                        const reasoning = Array.isArray(recommendation.reasoning) 
+                            ? recommendation.reasoning.map(r => `<li>${r}</li>`).join('') 
+                            : `<li>${recommendation.reasoning}</li>`;
+                        
+                        // Format the recommendation
+                        const html = `
+                            <div class="card border-primary mb-3">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">Recommended Trade: ${ticker} CSP</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p class="lead">Sell Cash-Secured Put:</p>
+                                            <ul class="list-group mb-3">
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>Stock:</span>
+                                                    <strong>${ticker} (${recommendation.recommended_stock?.company || 'Unknown'})</strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>Strike Price:</span>
+                                                    <strong>$${recommendation.strike_price}</strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>Expiration:</span>
+                                                    <strong>${recommendation.expiration_date}</strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>Confidence:</span>
+                                                    <strong>${recommendation.confidence}/5</strong>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="lead">Analysis:</p>
+                                            <ul class="mb-3">
+                                                ${reasoning}
+                                            </ul>
+                                            <div class="alert alert-info">
+                                                <strong>Market Assessment:</strong> ${recommendation.market_sentiment}
+                                            </div>
+                                            ${recommendation.note ? `<div class="alert alert-secondary"><small>${recommendation.note}</small></div>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            ${warningMsg}
+                        `;
+                        
+                        $('#aiLoadingSpinner').addClass('d-none');
+                        document.getElementById('aiRecommendationContent').innerHTML = html;
+                    } else if (data.error) {
+                        showAIError(data.error);
+                    } else {
+                        showAIError("Unknown error occurred when processing recommendation");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching AI recommendation:", error);
+                    showAIError(`Error: ${error.message}`);
+                });
             }
             
-            // Helper function to find the specific option that matches the recommendation
-            function findRecommendedOption(stock, strikePrice, expirationDate) {
-                if (!stock || !stock.options) return null;
-                
-                // Convert strike to number for comparison
-                const strike = parseFloat(strikePrice);
-                
-                // Find the option that matches both strike and expiration
-                return stock.options.find(option => {
-                    return Math.abs(option.strike - strike) < 0.01 && 
-                           option.expiration_date.includes(expirationDate);
-                });
+            function showAIError(message) {
+                $('#aiLoadingSpinner').addClass('d-none');
+                document.getElementById('aiRecommendationContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5>Error Getting Recommendation</h5>
+                        <p>${message}</p>
+                        <p class="mb-0 mt-3">Please try again later or contact support if the issue persists.</p>
+                    </div>
+                `;
             }
         });
         
@@ -984,6 +1052,29 @@
             
             // Update the favorites count badge
             updateFavoritesCount();
+        }
+        
+        // Load available stocks
+        function loadStocks() {
+            console.log('loadStocks function called');
+            $.get('/api/stocks', function(response) {
+                console.log('Received response from /api/stocks:', response);
+                const stocks = response.stocks;
+                if (stocks && stocks.length > 0) {
+                    console.log(`Found ${stocks.length} stocks to load`);
+                    stocks.forEach(stock => {
+                        $('#stockSelect').append(new Option(
+                            `${stock.ticker} - ${stock.name}`,
+                            JSON.stringify(stock)
+                        ));
+                    });
+                    console.log('Finished loading stocks into select box');
+                } else {
+                    console.error('No stocks found in the response or empty stocks array');
+                }
+            }).fail(function(error) {
+                console.error('Error loading stocks:', error);
+            });
         }
         
         // Initialize table
@@ -1219,21 +1310,114 @@
             });
         }
         
-        // Load available stocks
-        function loadStocks() {
-            $.get('/api/stocks', function(response) {
-                const stocks = response.stocks;
-                stocks.forEach(stock => {
-                    $('#stockSelect').append(new Option(
-                        `${stock.ticker} - ${stock.name}`,
-                        JSON.stringify(stock)
-                    ));
-                });
-            });
-        }
-        
         // Setup event handlers
         function setupEventHandlers() {
+            // Connect top refreshButton to the same functionality as the lower refresh button
+            $('#refreshButton').click(function() {
+                console.log('Top refreshButton clicked');
+                $('#refresh').click();
+            });
+            
+            // Add the refresh button handler
+            $('#refresh').click(function() {
+                console.log('Refresh button clicked');
+                
+                // Check if refresh is already in progress
+                if (refreshInProgress) {
+                    console.log('Refresh already in progress');
+                    return;
+                }
+                
+                refreshInProgress = true;
+                
+                // Show loading spinner
+                $('#loadingSpinner').show();
+                
+                // Get selected stocks
+                const selectedStocks = $('#stockSelect').val() || [];
+                if (selectedStocks.length === 0) {
+                    alert('Please select at least one stock');
+                    $('#loadingSpinner').hide();
+                    refreshInProgress = false;
+                    return;
+                }
+                
+                // Get probability and budget
+                const probability = parseFloat($('#minOtmProb').val() || 75);
+                const budget = parseFloat($('#maxBudget').val() || 10000);
+                const timeframe = parseInt($('#timeframeSelect').val() || 14);
+                
+                console.log(`Refreshing data for ${selectedStocks.length} stocks with probability ${probability}%, budget $${budget}, timeframe ${timeframe} days`);
+                
+                // Prepare stocks array
+                const stocksArray = selectedStocks.map(stock => {
+                    try {
+                        return JSON.parse(stock);
+                    } catch (e) {
+                        console.error('Error parsing stock:', stock, e);
+                        return null;
+                    }
+                }).filter(Boolean);
+                
+                // Make API request
+                fetch('/api/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        stocks: stocksArray,
+                        probability: probability,
+                        budget: budget,
+                        timeframe: timeframe
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Refresh response:', data);
+                    
+                    // Update table data
+                    if (data.success) {
+                        // Store the data for AI recommendations
+                        window.optionsData = data.data || [];
+                        
+                        // Update the table
+                        if (table) {
+                            table.setData(data.data || []);
+                        }
+                        
+                        // Enable the Ask AI button
+                        $('#askAIButton').prop('disabled', false);
+                        
+                        // Trigger dataLoaded event
+                        $(document).trigger('dataLoaded');
+                        
+                        // Update summary counts
+                        updateSummaryCounts(data.summary || {});
+                        
+                        // Update top choices
+                        updateTopChoices(data.data || []);
+                    } else {
+                        console.error('Error refreshing data:', data.error);
+                        showErrorToast('Error refreshing data: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error refreshing data:', error);
+                    showErrorToast('Error refreshing data: ' + error.message);
+                })
+                .finally(() => {
+                    // Hide loading spinner
+                    $('#loadingSpinner').hide();
+                    refreshInProgress = false;
+                });
+            });
+            
             // Load favorites button
             $('#loadFavoritesBtn').click(function() {
                 try {
@@ -1372,6 +1556,7 @@
                 var favoritesModal = new bootstrap.Modal(document.getElementById('favoritesModal'));
                 favoritesModal.show();
             });
+        }
             
             // Function to populate the favorites list in the modal
             function populateFavoritesList() {
@@ -1456,507 +1641,6 @@
                 });
             }
             
-            // Handle "Load All Favorites" button
-            $('#loadAllFavoritesBtn').click(function() {
-                if (favorites.length === 0) {
-                    alert('No favorites to load.');
-                    return;
-                }
-                
-                $('#loadFavoritesBtn').click();
-                
-                // Close the modal
-                bootstrap.Modal.getInstance(document.getElementById('favoritesModal')).hide();
-            });
-            
-            // Handle "Clear All Favorites" button
-            $('#clearAllFavoritesBtn').click(function() {
-                if (favorites.length === 0) {
-                    alert('No favorites to clear.');
-                    return;
-                }
-                
-                if (confirm('Are you sure you want to clear all favorites?')) {
-                    favorites = [];
-                    saveFavorites();
-                    
-                    // Update UI
-                    $('#noFavoritesMessage').show();
-                    $('#favoritesList').hide();
-                    
-                    // Update other UI elements
-                    synchronizeFavorites();
-                }
-            });
-            
-            // Refresh button
-            $('#refresh').click(function() {
-                console.log('Refresh button clicked!');
-                
-                try {
-                    // Show loading spinner
-                    $('#loadingSpinner').show();
-                    
-                    // Get selected stocks
-                    const selectedOptions = $('#stockSelect').val();
-                    console.log('Selected options:', selectedOptions);
-                    
-                    if (!selectedOptions || selectedOptions.length === 0) {
-                        alert('Please select at least one stock.');
-                        $('#loadingSpinner').hide();
-                        return;
-                    }
-                    
-                    // Get stocks from selection
-                    const stocks = selectedOptions.map(option => {
-                        try {
-                            return JSON.parse(option);
-                        } catch (e) {
-                            console.error('Error parsing option:', option, e);
-                            return null;
-                        }
-                    }).filter(s => s !== null);
-                    
-                    console.log('Stocks to refresh:', stocks);
-                    
-                    // Get filter values
-                    const minProb = parseFloat($('#minOtmProb').val() || 90);
-                    const maxBudget = parseFloat($('#maxBudget').val() || 10000);
-                    const timeframeValue = parseInt($('#timeframeSelect').val() || 30);
-                    
-                    console.log('Filter values:', { minProb, maxBudget, timeframeValue });
-                    
-                    // Format the request payload
-                    const stocksData = stocks.map(stock => ({
-                        ticker: stock.ticker,
-                        name: stock.name
-                    }));
-                    
-                    console.log('Preparing API request with payload:', { 
-                        stocks: stocksData, 
-                        min_prob: minProb, 
-                        max_budget: maxBudget, 
-                        timeframe: timeframeValue 
-                    });
-                    
-                    // Make the API request
-                $.ajax({
-                        url: '/api/refresh',
-                        method: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({
-                            stocks: stocksData,
-                            min_prob: minProb,
-                            max_budget: maxBudget,
-                            timeframe: timeframeValue
-                        }),
-                        success: function(response) {
-                            console.log('API response received:', response);
-                            
-                            // Debug the first few items to check for CSP quality score
-                            if (response.stocks && response.stocks.length > 0) {
-                                console.log('First item example:', response.stocks[0]);
-                                console.log('Has CSP quality score:', response.stocks[0].hasOwnProperty('csp_quality_score'));
-                                console.log('CSP quality score value:', response.stocks[0].csp_quality_score);
-                                console.log('CSP signal value:', response.stocks[0].csp_signal);
-                            }
-                            
-                            // Update the table with the new data
-                            updateTable(response.stocks);
-                            updateSummary(response.summary);
-                            // Hide loading spinner
-                            $('#loadingSpinner').hide();
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('API Error:', xhr.responseText);
-                            alert('Error fetching data: ' + (xhr.responseText || error));
-                            // Hide loading spinner
-                            $('#loadingSpinner').hide();
-                        }
-                    });
-                } catch (e) {
-                    console.error('Uncaught error in refresh handler:', e);
-                    alert('An unexpected error occurred: ' + e.message);
-                    $('#loadingSpinner').hide();
-                }
-            });
-
-            // Add direct event handler for favorite stars in the dropdown after Select2 is initialized
-            $('#stockSelect').on('select2:open', function() {
-                // Wait for the dropdown to be fully rendered
-                    setTimeout(function() {
-                    console.log('Select2 dropdown opened, setting up star handlers');
-                    
-                    // Remove any existing handlers first to avoid duplicates
-                    $('.select2-results__options').off('click', '.favorite-star-dropdown');
-                    
-                    // Add click handler to the star icons in the dropdown
-                    $('.select2-results__options').on('click', '.favorite-star-dropdown', function(e) {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        
-                        const ticker = $(this).data('ticker');
-                        const name = $(this).data('name');
-                        
-                        console.log('Dropdown star clicked for ticker:', ticker, 'name:', name);
-                        
-                        // Toggle the favorite status
-                        toggleFavorite(ticker, name);
-                        
-                        // Prevent select2 from selecting this option
-                        return false;
-                    });
-                }, 100);
-            });
-        }
-        
-        // Function to update the table with new data
-        function updateTable(data) {
-            console.log('Updating table with data:', data);
-            
-            // Clear any existing data
-            if (table) {
-                table.clearData();
-            }
-            
-            // Update the Top Choices section with the top 3 picks
-            updateTopChoices(data);
-            
-            // Initialize table if it doesn't exist
-            if (!table) {
-                console.log('Initializing table');
-                table = new Tabulator("#resultsTable", {
-                    data: data,
-                    layout: "fitColumns",
-                    responsiveLayout: "collapse",
-                    pagination: false,
-                    height: "70vh",
-                    initialSort: [
-                        {column: "premium_per_day", dir: "desc"}
-                    ],
-                    columns: [
-                        {title: "", field: "favorite", formatter: function(cell) {
-                            const data = cell.getRow().getData();
-                            const ticker = data.ticker;
-                            const isFavorite = favorites.some(f => f.ticker === ticker);
-                            return `<i class="fa fa-star table-star ${isFavorite ? 'favorite' : ''}" data-ticker="${ticker}"></i>`;
-                        }, width: 40, headerSort: false, hozAlign: "center", cellClick: function(e, cell) {
-                            const ticker = cell.getData().ticker;
-                            const company = cell.getData().company;
-                            const current = cell.getData().current_price;
-                            toggleFavorite(ticker, company, current);
-                            updateTableStars();
-                        }},
-                        {title: "Stock", field: "ticker", width: 80},
-                        {title: "Company", field: "company", width: 150},
-                        {title: "Current", field: "current_price", formatter: "money", formatterParams: {precision: 2}, width: 100},
-                        {title: "F/G", field: "fear_greed", formatter: function(cell) {
-                            const value = cell.getValue();
-                            let className = "";
-                            let signal = value;
-                            
-                            if (value === "Fear") {
-                                className = "text-danger";
-                            } else if (value === "Greed") {
-                                className = "text-success";
-                            } else {
-                                className = "text-secondary";
-                            }
-                            
-                            return `<small class="${className}">${signal}</small>`;
-                        }, width: 120},
-                        {title: "Strike", field: "strike", formatter: "money", formatterParams: {precision: 2}, width: 100},
-                        {title: "Premium", field: "premium", formatter: "money", formatterParams: {precision: 2}, width: 100},
-                        {title: "Return %", field: "return_percent", formatter: function(cell) {
-                            return cell.getValue().toFixed(2) + '%';
-                        }, width: 100},
-                        {title: "$/Day", field: "premium_per_day", formatter: function(cell) {
-                            return '$' + cell.getValue().toFixed(2);
-                        }, width: 100},
-                        {title: "Prob", field: "otm_probability", formatter: function(cell) {
-                            return cell.getValue().toFixed(1) + '%';
-                        }, width: 80},
-                        {title: "Days", field: "days_to_expiry", width: 80},
-                        {title: "Expiry", field: "expiry", width: 120},
-                        {title: "IV", field: "implied_volatility", formatter: function(cell) {
-                            return (cell.getValue() * 100).toFixed(1) + '%';
-                        }, width: 80},
-                        {title: "% Below", field: "percent_below", formatter: function(cell) {
-                            const value = cell.getValue();
-                            return value ? value.toFixed(1) + '%' : '0%';
-                        }, width: 70},
-                        
-                        // Add 50-day MA column after IV
-                        {title: "MA50", field: "ma50", sorter: "number", formatter: function(cell) {
-                            const value = cell.getValue();
-                            if (!value) return "N/A";
-                            return `$${value.toFixed(2)}`;
-                        }, tooltip: "50-day Moving Average price"},
-                        
-                        // Add Max 1D Move column
-                        {title: "Max 1D", field: "max_daily_move", sorter: "number", formatter: function(cell) {
-                            const value = cell.getValue();
-                            const date = cell.getData().max_daily_move_date;
-                            if (!value && value !== 0) return "N/A";
-                            return `<div>${value.toFixed(2)}%</div><div><small class="text-muted">${date || 'N/A'}</small></div>`;
-                        }, tooltip: function(cell) {
-                            const date = cell.getData().max_daily_move_date;
-                            if (!date) return "Maximum 1-day price movement in the last 30 days";
-                            return `Maximum 1-day price movement (${cell.getValue()}%) occurred on ${date}`;
-                        }},
-                        
-                        // Add Max 5D Move column
-                        {title: "Max 5D", field: "max_weekly_move", sorter: "number", formatter: function(cell) {
-                            const value = cell.getValue();
-                            const start = cell.getData().max_weekly_move_start || "N/A";
-                            const end = cell.getData().max_weekly_move_end || "N/A";
-                            if (!value && value !== 0) return "N/A";
-                            return `<div>${value.toFixed(2)}%</div><div><small class="text-muted">${start} to ${end}</small></div>`;
-                        }, tooltip: function(cell) {
-                            const start = cell.getData().max_weekly_move_start || "N/A";
-                            const end = cell.getData().max_weekly_move_end || "N/A";
-                            return `Maximum 5-day price movement (${cell.getValue()}%) occurred between ${start} and ${end}`;
-                        }},
-                        
-                        // CSP Score column with visual indicator and components
-                        {title: "CSP Score", field: "csp_quality_score", sorter: "number", formatter: function(cell) {
-                            const value = cell.getValue();
-                            if (!value && value !== 0) return "N/A";
-                            
-                            // Color coding based on score ranges
-                            let colorClass = "";
-                            if (value >= 8) colorClass = "text-success"; // Good scores in green
-                            else if (value >= 6) colorClass = "text-primary"; // Decent scores in blue
-                            else if (value >= 4) colorClass = "text-warning"; // Average scores in yellow/orange
-                            else colorClass = "text-danger"; // Poor scores in red
-                            
-                            // Get components, if available
-                            const components = cell.getData().score_components || {};
-                            
-                            let componentHtml = '';
-                            if (Object.keys(components).length > 0) {
-                                componentHtml = `
-                                <div style="font-size: 0.8em;">
-                                    <small>IV/HV: ${components.iv_hv_score?.toFixed(1) || 'N/A'}</small><br>
-                                    <small>RSI: ${components.rsi_score?.toFixed(1) || 'N/A'}</small><br>
-                                    <small>Premium: ${components.premium_score?.toFixed(1) || 'N/A'}</small><br>
-                                    <small>OTM: ${components.otm_score?.toFixed(1) || 'N/A'}</small><br>
-                                    <small>Support: ${components.support_score?.toFixed(1) || 'N/A'}</small>
-                                </div>`;
-                            }
-                            
-                            return `<div class="${colorClass} fw-bold">${value.toFixed(1)}</div>${componentHtml}`;
-                        }, width: 120, tooltip: function(cell) {
-                            const components = cell.getData().score_components;
-                            if (!components) return "CSP Quality Score (0-10)";
-                            
-                            let tooltip = "CSP Quality Score Components:\n";
-                            if (components.iv_hv_score !== undefined) tooltip += `• IV/HV Ratio: ${components.iv_hv_score.toFixed(1)}/10\n`;
-                            if (components.rsi_score !== undefined) tooltip += `• RSI: ${components.rsi_score.toFixed(1)}/10\n`;
-                            if (components.premium_score !== undefined) tooltip += `• Premium Quality: ${components.premium_score.toFixed(1)}/10\n`;
-                            if (components.otm_score !== undefined) tooltip += `• OTM Probability: ${components.otm_score.toFixed(1)}/10\n`;
-                            if (components.support_score !== undefined) tooltip += `• Technical Support: ${components.support_score.toFixed(1)}/10`;
-                            
-                            return tooltip;
-                        }},
-                        {title: "RSI", field: "rsi", sorter: "number", formatter: function(cell) {
-                            const value = cell.getValue();
-                            if (!value && value !== 0) return "N/A";
-                            
-                            let className = "text-secondary";
-                            if (value <= 30) className = "text-danger"; // Oversold
-                            else if (value >= 70) className = "text-success"; // Overbought
-                            
-                            return `<span class="${className}">${value.toFixed(1)}</span>`;
-                        }, width: 80, tooltip: "Relative Strength Index (under 30 = oversold, over 70 = overbought)"}
-                    ],
-                    rowClick: function(e, row) {
-                        if ($(e.target).hasClass('table-star')) return; // Don't trigger on star click
-                        
-                        // Toggle row selection
-                        row.toggleSelect();
-                    }
-                });
-                
-                // Add event listener for the table-star clicks
-                $("#resultsTable").on("click", ".table-star", function(e) {
-                    e.stopPropagation(); // Prevent row selection
-                    const ticker = $(this).data("ticker");
-                    const name = $(this).data("name");
-                    toggleFavorite(ticker, name);
-                });
-                
-            } else {
-                // Update existing table with new data
-                table.setData(data);
-            }
-            
-            // Update stars in the table
-            updateTableStars();
-        }
-        
-        // Function to update summary stats
-        function updateSummary(summary) {
-            console.log('Updating summary:', summary);
-            
-            if (!summary) return;
-            
-            // Update summary counts
-            $('#totalStocks').text(summary.totalStocks || 0);
-            $('#greedCount').text(summary.greedCount || 0);
-            $('#fearCount').text(summary.fearCount || 0);
-            
-            // Update category counts
-            $('#bestCount').text(summary.bestCount || 0);
-            $('#betterCount').text(summary.betterCount || 0);
-            $('#goodCount').text(summary.goodCount || 0);
-            
-            // Show the summary section
-            $('#summary').show();
-        }
-        
-        // Function to update the Top Choices section
-        function updateTopChoices(data) {
-            console.log('updateTopChoices called with', data.length, 'items');
-            
-            // Clear existing content
-            $('#topChoicesContent').empty();
-            
-            if (!data || data.length === 0) {
-                console.log('No data available for Top Choices');
-                $('#topChoicesContent').html('<div class="col-md-12"><p class="text-center text-muted">No data available. Use the Refresh Data button to fetch CSP opportunities.</p></div>');
-                return;
-            }
-            
-            // Sort data by CSP quality score (if available) or by premium_per_day
-            const sortedData = [...data].sort((a, b) => {
-                if (a.csp_quality_score !== undefined && b.csp_quality_score !== undefined) {
-                    return b.csp_quality_score - a.csp_quality_score;
-                }
-                return b.premium_per_day - a.premium_per_day;
-            });
-            
-            console.log('Sorted data for top choices:', sortedData.slice(0, 3).map(item => ({
-                ticker: item.ticker,
-                csp_quality_score: item.csp_quality_score,
-                csp_signal: item.csp_signal,
-                premium_per_day: item.premium_per_day
-            })));
-            
-            // Take top 3
-            const topPicks = sortedData.slice(0, 3);
-            
-            // Display top picks
-            topPicks.forEach(pick => {
-                let scoreHtml = '';
-                if (pick.csp_quality_score !== undefined) {
-                    let scoreClass = '';
-                    let signal = '';
-                    
-                    if (pick.csp_quality_score >= 9) {
-                        scoreClass = 'text-success';
-                        signal = 'EXCEPTIONAL';
-                    } else if (pick.csp_quality_score >= 7) {
-                        scoreClass = 'text-primary';
-                        signal = 'EXCELLENT';
-                    } else if (pick.csp_quality_score >= 5) {
-                        scoreClass = 'text-info';
-                        signal = 'GOOD';
-                    } else if (pick.csp_quality_score >= 3) {
-                        scoreClass = 'text-warning';
-                        signal = 'FAIR';
-                    } else {
-                        scoreClass = 'text-danger';
-                        signal = 'POOR';
-                    }
-                    
-                    scoreHtml = `<div class="mt-2">
-                        <strong>CSP Score:</strong> <span class="${scoreClass} fw-bold">${pick.csp_quality_score?.toFixed(1) || 'N/A'}</span>
-                        <span class="badge ${scoreClass.replace('text-', 'bg-')}">${signal}</span>
-                    </div>`;
-                }
-                
-                $('#topChoicesContent').append(`
-                    <div class="col-md-4 mb-3">
-                        <div class="card top-pick-card ${pick.category ? pick.category.toLowerCase() : ''}">
-                            <div class="card-body">
-                                <h5 class="card-title">${pick.ticker} - ${pick.company}</h5>
-                                <div class="card-text">
-                                    <div><strong>Current:</strong> $${pick.current_price.toFixed(2)} | <strong>Strike:</strong> $${pick.strike.toFixed(2)}</div>
-                                    <div><strong>Premium:</strong> $${pick.premium.toFixed(2)} | <strong>$/Day:</strong> $${pick.premium_per_day.toFixed(2)}</div>
-                                    <div><strong>Expiry:</strong> ${pick.expiry} (${pick.days_to_expiry} days)</div>
-                                    <div><strong>OTM Prob:</strong> ${pick.otm_probability.toFixed(1)}% | <strong>Return:</strong> ${pick.return_percent.toFixed(2)}%</div>
-                                    <div><strong>Volatility:</strong> IV ${(pick.implied_volatility * 100).toFixed(1)}% | <strong>MA50:</strong> $${pick.ma50?.toFixed(2) || 'N/A'}</div>
-                                    <div><strong>% Below:</strong> ${pick.percent_below.toFixed(2)}% | <strong>Support Quality:</strong> <span class="${getColorForSupport(pick.support_quality)}">${pick.support_quality || 'Unknown'}</span></div>
-                                    <div><strong>Max 1D Move:</strong> ${pick.max_daily_move?.toFixed(1) || '0.0'}% on ${pick.max_daily_move_date || 'N/A'}</div>
-                                    <div><strong>Max 5D Move:</strong> ${pick.max_weekly_move?.toFixed(1) || '0.0'}% (${pick.max_weekly_move_start || 'N/A'} to ${pick.max_weekly_move_end || 'N/A'})</div>
-                                    <div><strong>Category:</strong> <span class="${getCategoryColorClass(pick.category)}">${pick.category || 'N/A'}</span></div>
-                                    <div class="small text-muted">
-                                        ${getCategoryDescription(pick.category, pick.premium_per_day)}
-                                    </div>
-                                    ${scoreHtml}
-                                    <div class="mt-2">
-                                        <strong>CSP Score Components:</strong>
-                                        <div class="small">
-                                            <div><strong>IV/HV Ratio:</strong> ${pick.score_components?.iv_hv_score?.toFixed(1) || 'N/A'}/10</div>
-                                            <div><strong>RSI:</strong> ${pick.score_components?.rsi_score?.toFixed(1) || 'N/A'}/10</div>
-                                            <div><strong>Premium Quality:</strong> ${pick.score_components?.premium_score?.toFixed(1) || 'N/A'}/10</div>
-                                            <div><strong>OTM Probability:</strong> ${pick.score_components?.otm_score?.toFixed(1) || 'N/A'}/10</div>
-                                            <div><strong>Technical Support:</strong> ${pick.score_components?.support_score?.toFixed(1) || 'N/A'}/10</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `);
-            });
-        }
-        
-        // Helper function to get color class for support quality
-        function getColorForSupport(quality) {
-            switch(quality) {
-                case 'Excellent': return 'text-success fw-bold';
-                case 'Good': return 'text-primary fw-bold';
-                case 'Moderate': return 'text-info';
-                case 'Weak': return 'text-warning';
-                default: return 'text-muted';
-            }
-        }
-        
-        // Helper function to get color class for category
-        function getCategoryColorClass(category) {
-            switch(category) {
-                case 'Best': return 'text-success fw-bold';
-                case 'Better': return 'text-primary fw-bold';
-                case 'Good': return 'text-warning fw-bold';
-                default: return 'text-muted';
-            }
-        }
-        
-        // Helper function to get description for category
-        function getCategoryDescription(category, premiumPerDay) {
-            switch(category) {
-                case 'Best': 
-                    return '85%+ OTM probability, $0.20+/day premium, excellent support';
-                case 'Better': 
-                    return '85%+ OTM probability, $0.15+/day premium, good/excellent support';
-                case 'Good': 
-                    return '85%+ OTM probability, $0.10+/day premium';
-                default: 
-                    return '';
-            }
-        }
-        
-        // Function to update stars in the table
-        function updateTableStars() {
-            $('.table-star').each(function() {
-                const ticker = $(this).data('ticker');
-                const isFavorite = favorites.some(f => f.ticker === ticker);
-                $(this).toggleClass('favorite', isFavorite);
-            });
-        }
-
         // Update favorites count badge
         function updateFavoritesCount() {
             const count = favorites.length;
@@ -1966,10 +1650,95 @@
             if (count > 0) {
                 $('#favoritesCount').removeClass('bg-secondary').addClass('bg-warning text-dark');
                 $('#favoritesBtn').removeClass('btn-outline-secondary').addClass('btn-outline-warning');
-            } else {
+                            } else {
                 $('#favoritesCount').removeClass('bg-warning text-dark').addClass('bg-secondary');
                 $('#favoritesBtn').removeClass('btn-outline-warning').addClass('btn-outline-secondary');
             }
+        }
+        
+        // Update summary counts from the API response
+        function updateSummaryCounts(summary) {
+            // Update the summary section with counts
+            $('#bestCount').text(summary.best_count || 0);
+            $('#betterCount').text(summary.better_count || 0);
+            $('#goodCount').text(summary.good_count || 0);
+            $('#totalStocks').text(summary.total_stocks || 0);
+            $('#greedCount').text(summary.greed_count || 0);
+            $('#fearCount').text(summary.fear_count || 0);
+        }
+        
+        // Update top choices section with the best options
+        function updateTopChoices(data) {
+            const $container = $('#topChoicesContent');
+            
+            if (!data || data.length === 0) {
+                $container.html('<div class="col-md-12"><p class="text-center text-muted">No data available</p></div>');
+                return;
+            }
+            
+            // Sort data by CSP score first, then by category if scores are equal
+            const sortedData = [...data].sort((a, b) => {
+                // First sort by CSP score (descending)
+                const scoreA = a.csp_quality_score || 0;
+                const scoreB = b.csp_quality_score || 0;
+                
+                if (scoreA !== scoreB) {
+                    return scoreB - scoreA;
+                }
+                
+                // If scores are equal, sort by category
+                const categoryOrder = { 'Best': 1, 'Better': 2, 'Good': 3 };
+                if (categoryOrder[a.category] !== categoryOrder[b.category]) {
+                    return categoryOrder[a.category] - categoryOrder[b.category];
+                }
+                
+                // Finally sort by premium_per_day as a tiebreaker
+                return b.premium_per_day - a.premium_per_day;
+            });
+            
+            // Take top 5 options
+            const topOptions = sortedData.slice(0, 5);
+            
+            let html = '';
+            topOptions.forEach((option, index) => {
+                const rank = index + 1;
+                const categoryClass = option.category === 'Best' ? 'best' : 
+                                     option.category === 'Better' ? 'better' : 'good';
+                
+                html += `
+                    <div class="col-md-4 mb-3">
+                        <div class="card ${categoryClass}">
+                            <div class="card-header d-flex justify-content-between align-items-center p-2">
+                                <span class="badge bg-dark">Rank #${rank}</span>
+                                <span class="badge bg-${option.category === 'Best' ? 'success' : 
+                                                       option.category === 'Better' ? 'primary' : 'warning'}">
+                                    ${option.category}
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    ${option.ticker} - $${option.strike.toFixed(2)}
+                                </h5>
+                                <p class="card-text">
+                                    <strong>Premium:</strong> $${option.premium.toFixed(2)} ($${option.premium_per_day.toFixed(2)}/day)<br>
+                                    <strong>Expiry:</strong> ${option.expiry} (${option.days_to_expiry} days)<br>
+                                    <strong>OTM Prob:</strong> ${option.otm_probability.toFixed(1)}%<br>
+                                    <strong>CSP Score:</strong> ${option.csp_quality_score ? option.csp_quality_score.toFixed(1) : 'N/A'}/10
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            $container.html(html);
+        }
+        
+        // Show error toast
+        function showErrorToast(message) {
+            $('#errorToastBody').text(message);
+            const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+            toast.show();
         }
     </script>
 </body>
