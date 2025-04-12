@@ -50,16 +50,29 @@ import google.generativeai as genai
 
 # Load environment variables from .env file
 load_dotenv()
-# Configure API key for Google Generative AI
-genai_api_key = os.getenv("GENAI_API_KEY")
-if genai_api_key:
-    genai.configure(api_key=genai_api_key)
-else:
-    logger.warning("GENAI_API_KEY not found in environment variables. AI recommendation feature will not work.")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Add file handler to save logs to a file
+log_file_handler = logging.FileHandler('doby_trades.log')
+log_file_handler.setLevel(logging.DEBUG)
+log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+log_file_handler.setFormatter(log_formatter)
+logger.addHandler(log_file_handler)
+
+# Configure API key for Google Generative AI
+genai_api_key = os.getenv("GENAI_API_KEY")
+if genai_api_key:
+    logger.info(f"GENAI_API_KEY found. Length: {len(genai_api_key)} characters")
+    try:
+        genai.configure(api_key=genai_api_key)
+        logger.info("Gemini API configured successfully")
+    except Exception as e:
+        logger.error(f"Error configuring Gemini API: {str(e)}")
+else:
+    logger.warning("GENAI_API_KEY not found in environment variables. AI recommendation feature will not work.")
 
 app = Flask(__name__)
 CORS(app)
@@ -1131,15 +1144,9 @@ def load_data_from_cache():
 
 @app.route('/')
 def index():
-    """
-    Render the main application page.
-    
-    This route serves the main HTML template for the web interface.
-    
-    Returns:
-        str: Rendered HTML template
-    """
-    return render_template('index.html')
+    """Serve the main application page."""
+    # Add a debug version of index.html with extra logging
+    return render_template('index.html', debug_mode=True, timestamp=datetime.now().timestamp())
 
 @app.route('/api/refresh-data', methods=['POST'])
 def refresh_data():
@@ -1205,7 +1212,7 @@ def get_data_post():
     try:
         data = request.get_json()
         selected_stocks = data.get('stocks', [])
-        min_otm_prob = float(data.get('minOtmProb', data.get('min_prob', 90)))/100  # Convert to decimal
+        min_otm_prob = float(data.get('probability', data.get('minOtmProb', data.get('min_prob', 90))))/100  # Convert to decimal
         max_budget = float(data.get('maxBudget', data.get('max_budget', 10000)))
         timeframe_days = int(data.get('timeframe', 30))
         
@@ -1355,8 +1362,8 @@ def get_data_post():
                         else:
                             support_quality = "unknown"
                         
-                        # Use 85% probability threshold across all categories
-                        if otm_prob >= 0.85:
+                        # Use user-provided probability threshold across all categories
+                        if otm_prob >= min_otm_prob:
                             # Best: Premium ≥ $0.20/day AND excellent support
                             if premium_per_day >= 0.20 and support_quality == "excellent":
                                 category = 'Best'
@@ -1619,15 +1626,18 @@ def get_stocks():
     return jsonify({"stocks": stocks})
 
 @app.route('/api/ai-recommendation', methods=['POST'])
+@app.route('/api/recommendation', methods=['POST'])  # Add alias to match frontend
 def ai_recommendation():
     """
-    Get AI-powered recommendation for CSP opportunities.
+    Generate an AI-powered recommendation for CSP opportunities based on current stock data.
     
-    This endpoint takes the current stocks data and user preferences,
-    then asks the AI model to analyze and recommend the best CSP opportunity.
+    This endpoint takes the current stock data and the user's risk tolerance level,
+    then uses Google's Generative AI (Gemini) to analyze the data and recommend
+    a specific stock and options contract for a CSP strategy.
     
     Request JSON parameters:
     - risk_tolerance (str, optional): User's risk preference ('conservative', 'moderate', or 'aggressive')
+    - stocks_data (list, optional): If provided, use this data instead of the global sp500_data
     
     Returns:
         JSON with AI recommendation details
@@ -1636,21 +1646,27 @@ def ai_recommendation():
         # Get request data
         data = request.json or {}
         risk_tolerance = data.get('risk_tolerance', 'moderate')
+        stocks_data = data.get('stocks_data')
         
         # Validate risk tolerance
         valid_tolerances = ['conservative', 'moderate', 'aggressive']
         if risk_tolerance not in valid_tolerances:
             risk_tolerance = 'moderate'
         
-        # Check if we have data
-        if not sp500_data:
-            return jsonify({
-                "success": False,
-                "error": "No stock data available. Please refresh data first."
-            }), 400
-        
-        # Get AI recommendation
-        result = get_ai_recommendation(sp500_data, risk_tolerance)
+        # Use provided data if available, otherwise fall back to global data
+        if stocks_data:
+            logger.info(f"Using client-provided data with {len(stocks_data)} stocks")
+            result = get_ai_recommendation(stocks_data, risk_tolerance)
+        else:
+            # Check if we have data
+            if not sp500_data:
+                return jsonify({
+                    "success": False,
+                    "error": "No stock data available. Please refresh data first."
+                }), 400
+            
+            logger.info(f"Using global data with {len(sp500_data)} stocks")
+            result = get_ai_recommendation(sp500_data, risk_tolerance)
         
         if 'error' in result and result.get('recommendation') is None:
             return jsonify({
@@ -1889,16 +1905,26 @@ def get_ai_recommendation(stocks_data, risk_tolerance='moderate'):
     """
     if not genai_api_key:
         logger.error("Cannot get AI recommendation: GENAI_API_KEY not configured")
-        return {
-            "error": "API key not configured",
-            "recommendation": None
-        }
+        return create_fallback_recommendation(stocks_data, risk_tolerance, "AI API key not configured")
     
     try:
         # Select top 5 stocks by CSP quality score for processing efficiency
         if stocks_data:
             # Filter to only stocks with options data
             valid_stocks = [s for s in stocks_data if 'options' in s and s['options']]
+            
+            if not valid_stocks:
+                logger.error("No valid stocks with options data found")
+                return {
+                    "error": "No valid stocks with options data found",
+                    "recommendation": None
+                }
+                
+            # Log data sample for debugging
+            logger.info(f"Processing AI recommendation for {len(valid_stocks)} valid stocks with risk tolerance: {risk_tolerance}")
+            if len(valid_stocks) > 0:
+                logger.info(f"Sample stock data: {valid_stocks[0].get('ticker', 'Unknown')}, score: {valid_stocks[0].get('csp_quality_score', 'N/A')}")
+            
             # Sort by CSP quality score (if available)
             sorted_stocks = sorted(valid_stocks, 
                                 key=lambda x: x.get('csp_quality_score', 0), 
@@ -1920,7 +1946,7 @@ def get_ai_recommendation(stocks_data, risk_tolerance='moderate'):
         stock_summaries = []
         for stock in top_stocks:
             ticker = stock.get('ticker', 'Unknown')
-            company_name = stock.get('company_name', 'Unknown Company')
+            company_name = stock.get('company', 'Unknown Company')
             current_price = stock.get('current_price', 0)
             rsi = stock.get('rsi', 0)
             ma50 = stock.get('ma50', 0)
@@ -1945,7 +1971,7 @@ def get_ai_recommendation(stocks_data, risk_tolerance='moderate'):
                 - Premium: ${best_option.get('premium', 0)}
                 - Premium/day: ${best_option.get('premium_per_day', 0):.2f}
                 - OTM Probability: {best_option.get('otm_probability', 0):.1f}%
-                - Expiration: {best_option.get('expiration_date', 'Unknown')}
+                - Expiration: {best_option.get('expiry', 'Unknown')}
                 """
             
             summary = f"""
@@ -1986,6 +2012,8 @@ def get_ai_recommendation(stocks_data, risk_tolerance='moderate'):
         ticker, strike_price, expiration_date, reasoning_bullets (array), confidence_score, market_assessment
         """
         
+        logger.info(f"Sending prompt to Gemini API, length: {len(prompt)} characters")
+        
         # Set up the model and parameters
         generation_config = {
             "temperature": 0.2,
@@ -1995,49 +2023,228 @@ def get_ai_recommendation(stocks_data, risk_tolerance='moderate'):
         }
         
         # Get response from Gemini
-        model = genai.GenerativeModel(
-            model_name="models/gemini-1.5-flash",
-            generation_config=generation_config
-        )
-        response = model.generate_content(prompt)
-        
-        # Process the response (assuming JSON format)
         try:
-            import json
-            result = json.loads(response.text)
+            logger.info("Creating Gemini model instance with models/gemini-1.5-flash")
+            try:
+                model = genai.GenerativeModel(
+                    model_name="models/gemini-1.5-flash",
+                    generation_config=generation_config
+                )
+                logger.info("Gemini model instance created successfully")
+            except Exception as model_error:
+                logger.error(f"Error creating Gemini model instance: {str(model_error)}")
+                return create_fallback_recommendation(stocks_data, risk_tolerance, f"Error creating Gemini model: {str(model_error)}")
+                
+            logger.info("Calling Gemini generate_content")
+            try:
+                response = model.generate_content(prompt)
+                logger.info(f"Received response from Gemini API with length: {len(str(response.text))}")
+            except Exception as generate_error:
+                logger.error(f"Error generating content with Gemini: {str(generate_error)}")
+                return create_fallback_recommendation(stocks_data, risk_tolerance, f"Error generating content: {str(generate_error)}")
             
-            # Find the stock data for the recommended ticker
-            recommended_stock = next((s for s in stocks_data if s['ticker'] == result['ticker']), None)
+            logger.info(f"Received response from Gemini API: {str(response.text)[:100]}...")
             
-            # Construct the final recommendation
-            recommendation = {
-                "recommended_stock": recommended_stock,
-                "ticker": result['ticker'],
-                "strike_price": result['strike_price'],
-                "expiration_date": result['expiration_date'],
-                "reasoning": result['reasoning_bullets'],
-                "confidence": result['confidence_score'],
-                "market_sentiment": result['market_assessment']
-            }
-            
-            return {
-                "success": True,
-                "recommendation": recommendation
-            }
-            
-        except (json.JSONDecodeError, KeyError) as e:
-            logger.error(f"Error parsing AI response: {e}")
-            logger.error(f"Raw response: {response.text}")
-            return {
-                "error": f"Failed to parse AI response: {str(e)}",
-                "raw_response": response.text,
-                "recommendation": None
-            }
+            # Process the response (assuming JSON format)
+            try:
+                import json
+                response_text = response.text
+                
+                # Clean up response text if it's wrapped in markdown code blocks
+                if response_text.startswith("```"):
+                    # Extract the content between the code block markers
+                    logger.info("Response is wrapped in markdown code blocks, cleaning up")
+                    # Find the first and last code block markers
+                    first_marker_end = response_text.find("\n")
+                    last_marker_start = response_text.rfind("```")
+                    
+                    if first_marker_end != -1 and last_marker_start != -1:
+                        # Extract the content between the markers
+                        response_text = response_text[first_marker_end + 1:last_marker_start].strip()
+                        logger.info(f"Cleaned response text. New length: {len(response_text)}")
+                
+                # Parse the JSON
+                result = json.loads(response_text)
+                
+                # Validate required fields
+                required_fields = ['ticker', 'strike_price', 'expiration_date', 'reasoning_bullets', 'confidence_score', 'market_assessment']
+                missing_fields = [field for field in required_fields if field not in result]
+                
+                if missing_fields:
+                    logger.error(f"Missing required fields in AI response: {missing_fields}")
+                    logger.error(f"Raw response: {response.text}")
+                    return create_fallback_recommendation(stocks_data, risk_tolerance, f"AI response missing required fields: {', '.join(missing_fields)}")
+                
+                # Find the stock data for the recommended ticker
+                recommended_stock = next((s for s in stocks_data if s['ticker'] == result['ticker']), None)
+                
+                if not recommended_stock:
+                    logger.warning(f"Recommended ticker {result['ticker']} not found in provided data")
+                
+                # Construct the final recommendation
+                recommendation = {
+                    "recommended_stock": recommended_stock,
+                    "ticker": result['ticker'],
+                    "strike_price": result['strike_price'],
+                    "expiration_date": result['expiration_date'],
+                    "reasoning": result['reasoning_bullets'],
+                    "confidence": result['confidence_score'],
+                    "market_sentiment": result['market_assessment']
+                }
+                
+                return {
+                    "success": True,
+                    "recommendation": recommendation
+                }
+                
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.error(f"Error parsing AI response: {e}")
+                logger.error(f"Raw response: {response.text}")
+                return create_fallback_recommendation(stocks_data, risk_tolerance, f"Failed to parse AI response: {str(e)}")
+                
+        except Exception as e:
+            logger.error(f"Error calling Gemini API: {e}")
+            return create_fallback_recommendation(stocks_data, risk_tolerance, f"Error calling AI service: {str(e)}")
             
     except Exception as e:
         logger.error(f"Error getting AI recommendation: {e}")
+        return create_fallback_recommendation(stocks_data, risk_tolerance, f"Error getting AI recommendation: {str(e)}")
+
+# Fallback recommendation function for when AI is unavailable
+def create_fallback_recommendation(stocks_data, risk_tolerance, error_reason=None):
+    """
+    Create a rule-based fallback recommendation when the AI service is unavailable.
+    
+    Args:
+        stocks_data (list): The same stock data that would have been sent to the AI
+        risk_tolerance (str): User's specified risk tolerance
+        error_reason (str): The reason the AI service failed, for logging
+        
+    Returns:
+        dict: A recommendation based on simple rules
+    """
+    if not stocks_data or len(stocks_data) == 0:
         return {
-            "error": f"Error getting AI recommendation: {str(e)}",
+            "error": "No stock data available for recommendation",
+            "recommendation": None
+        }
+    
+    try:
+        logger.info(f"Creating fallback recommendation due to: {error_reason}")
+        
+        # Filter to stocks with at least some options
+        valid_stocks = [s for s in stocks_data if 'options' in s and s['options']]
+        
+        if not valid_stocks:
+            return {
+                "error": "No valid stocks with options data found",
+                "recommendation": None
+            }
+            
+        # Filter based on risk tolerance
+        if risk_tolerance == 'conservative':
+            # For conservative, prefer high OTM probability, high CSP score, low max movement
+            filtered_stocks = [s for s in valid_stocks if s.get('csp_quality_score', 0) >= 7]
+            if not filtered_stocks and valid_stocks:
+                filtered_stocks = valid_stocks  # Fallback if no high-score stocks
+        elif risk_tolerance == 'aggressive':
+            # For aggressive, prefer higher premium/day, accept lower OTM probability
+            filtered_stocks = valid_stocks  # Use all stocks for aggressive
+        else:  # moderate
+            # For moderate, balance between score and premium
+            filtered_stocks = [s for s in valid_stocks if s.get('csp_quality_score', 0) >= 5]
+            if not filtered_stocks and valid_stocks:
+                filtered_stocks = valid_stocks  # Fallback if no medium-score stocks
+                
+        # Sort by CSP quality score
+        sorted_stocks = sorted(filtered_stocks, 
+                            key=lambda x: x.get('csp_quality_score', 0), 
+                            reverse=True)
+                            
+        # Take top stock
+        if sorted_stocks:
+            top_stock = sorted_stocks[0]
+            
+            # Find best option for this stock based on risk tolerance
+            if 'options' in top_stock and top_stock['options']:
+                sorted_options = []
+                
+                if risk_tolerance == 'conservative':
+                    # Sort by OTM probability first, then premium
+                    sorted_options = sorted(top_stock['options'], 
+                                      key=lambda x: (x.get('otm_probability', 0), x.get('premium_per_day', 0)),
+                                      reverse=True)
+                elif risk_tolerance == 'aggressive':
+                    # Sort by premium first, then OTM probability but only above 75%
+                    valid_options = [o for o in top_stock['options'] if o.get('otm_probability', 0) >= 75]
+                    sorted_options = sorted(valid_options, 
+                                      key=lambda x: x.get('premium_per_day', 0),
+                                      reverse=True)
+                else:  # moderate
+                    # Sort by balance of both
+                    valid_options = [o for o in top_stock['options'] if o.get('otm_probability', 0) >= 80]
+                    sorted_options = sorted(valid_options, 
+                                      key=lambda x: x.get('premium_per_day', 0),
+                                      reverse=True)
+                
+                # Take top option
+                if sorted_options:
+                    best_option = sorted_options[0]
+                    
+                    # Generate recommendation
+                    ticker = top_stock.get('ticker', 'Unknown')
+                    
+                    # Create automated reasoning bullets
+                    reasoning = [
+                        f"This stock has a high CSP quality score of {top_stock.get('csp_quality_score', 0):.1f}/10",
+                        f"The option has an OTM probability of {best_option.get('otm_probability', 0):.1f}%",
+                        f"Premium per day is ${best_option.get('premium_per_day', 0):.2f}",
+                        f"Strike price of ${best_option.get('strike', 0):.2f} is {best_option.get('percent_below', 0):.1f}% below current price"
+                    ]
+                    
+                    # Add support quality reasoning if available
+                    if 'support_quality' in best_option:
+                        reasoning.append(f"Support quality is {best_option.get('support_quality', 'Unknown')}")
+                    
+                    # Create market assessment based on available data
+                    rsi_values = [s.get('rsi', 50) for s in stocks_data if 'rsi' in s]
+                    avg_market_rsi = sum(rsi_values) / len(rsi_values) if rsi_values else 50
+                    
+                    market_assessment = "Market conditions appear "
+                    if avg_market_rsi > 70:
+                        market_assessment += "overbought with high RSI values, suggesting caution."
+                    elif avg_market_rsi < 30:
+                        market_assessment += "oversold with low RSI values, potentially offering value opportunities."
+                    else:
+                        market_assessment += "neutral based on average RSI values."
+                    
+                    recommendation = {
+                        "recommended_stock": top_stock,
+                        "ticker": ticker,
+                        "strike_price": best_option.get('strike', 0),
+                        "expiration_date": best_option.get('expiry', "Unknown"),
+                        "reasoning": reasoning,
+                        "confidence": 3,  # Medium confidence for fallback recommendation
+                        "market_sentiment": market_assessment,
+                        "note": "This is an automated recommendation as AI was unavailable"
+                    }
+                    
+                    return {
+                        "success": True,
+                        "recommendation": recommendation,
+                        "warning": f"Used fallback recommendation system: {error_reason}"
+                    }
+        
+        # If we get here, we couldn't create a good recommendation
+        return {
+            "error": f"Unable to generate recommendation: {error_reason}",
+            "recommendation": None
+        }
+    
+    except Exception as e:
+        logger.error(f"Error creating fallback recommendation: {str(e)}")
+        return {
+            "error": f"Error creating fallback recommendation: {str(e)}",
             "recommendation": None
         }
 
