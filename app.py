@@ -324,6 +324,7 @@ def fetch_stock_data(ticker):
             - price: Current stock price (latest close)
             - rsi: Current Relative Strength Index value
             - ma50: 50-day moving average price
+            - historical_volatility: Current 30-day historical volatility
             - options: Dictionary containing:
                 - calls: List of call option contracts
                 - puts: List of put option contracts
@@ -359,9 +360,36 @@ def fetch_stock_data(ticker):
         current_rsi = rsi.iloc[-1]
         logger.info(f"{ticker} RSI: {current_rsi:.2f}")
         
+        # Calculate Historical Volatility (30-day)
+        try:
+            # Calculate daily returns
+            returns = hist['Close'].pct_change().dropna()
+            
+            # Calculate rolling standard deviation (30-day window)
+            hv_30 = returns.rolling(window=30).std().iloc[-1]
+            
+            # Annualize the volatility (multiply by sqrt of trading days in a year)
+            historical_volatility = hv_30 * (252 ** 0.5)
+            
+            logger.info(f"{ticker} 30-day Historical Volatility: {historical_volatility:.4f}")
+        except Exception as e:
+            logger.warning(f"Error calculating historical volatility for {ticker}: {str(e)}")
+            historical_volatility = 0.3  # Default value
+        
         # Calculate MA50
         ma50 = hist['Close'].rolling(window=50).mean().iloc[-1]
         logger.info(f"{ticker} MA50: ${ma50:.2f}")
+        
+        # Calculate max movement metrics
+        try:
+            max_daily_move, max_daily_date = calculate_max_daily_move(ticker)
+            max_weekly_move, start_date, end_date = calculate_max_weekly_move(ticker)
+            logger.info(f"{ticker} Max 1D Move: {max_daily_move:.2f}% on {max_daily_date}")
+            logger.info(f"{ticker} Max 5D Move: {max_weekly_move:.2f}% from {start_date} to {end_date}")
+        except Exception as e:
+            logger.warning(f"Error calculating max movement metrics for {ticker}: {str(e)}")
+            max_daily_move, max_daily_date = None, None
+            max_weekly_move, start_date, end_date = None, None, None
         
         # Get options chain
         try:
@@ -376,6 +404,12 @@ def fetch_stock_data(ticker):
                     'price': current_price,
                     'rsi': current_rsi,
                     'ma50': ma50,
+                    'historical_volatility': historical_volatility,
+                    'max_daily_move': max_daily_move,
+                    'max_daily_move_date': max_daily_date,
+                    'max_weekly_move': max_weekly_move,
+                    'max_weekly_move_start': start_date,
+                    'max_weekly_move_end': end_date,
                     'options': {'calls': [], 'puts': []}
                 }
                 
@@ -413,6 +447,12 @@ def fetch_stock_data(ticker):
                 'price': current_price,
                 'rsi': current_rsi,
                 'ma50': ma50,
+                'historical_volatility': historical_volatility,
+                'max_daily_move': max_daily_move,
+                'max_daily_move_date': max_daily_date,
+                'max_weekly_move': max_weekly_move,
+                'max_weekly_move_start': start_date,
+                'max_weekly_move_end': end_date,
                 'options': {
                     'calls': calls,
                     'puts': puts
@@ -427,6 +467,12 @@ def fetch_stock_data(ticker):
                 'price': current_price,
                 'rsi': current_rsi,
                 'ma50': ma50,
+                'historical_volatility': historical_volatility,
+                'max_daily_move': max_daily_move,
+                'max_daily_move_date': max_daily_date,
+                'max_weekly_move': max_weekly_move,
+                'max_weekly_move_start': start_date,
+                'max_weekly_move_end': end_date,
                 'options': {'calls': [], 'puts': []}
             }
             
@@ -1317,6 +1363,82 @@ def get_data_post():
                             'ma50_ratio': stock_data['price'] / stock_data['ma50'] if stock_data['ma50'] > 0 else 1.0
                         })
                         
+                        # Add max movement data if available
+                        try:
+                            # Calculate max daily move if not already present
+                            if 'max_daily_move' not in stock_data:
+                                max_daily_move, max_daily_date = calculate_max_daily_move(ticker)
+                                stock_data['max_daily_move'] = max_daily_move
+                                stock_data['max_daily_move_date'] = max_daily_date
+                            
+                            # Calculate max weekly move if not already present
+                            if 'max_weekly_move' not in stock_data:
+                                max_weekly_move, start_date, end_date = calculate_max_weekly_move(ticker)
+                                stock_data['max_weekly_move'] = max_weekly_move
+                                stock_data['max_weekly_move_start'] = start_date
+                                stock_data['max_weekly_move_end'] = end_date
+                            
+                            # Add movement data to option result
+                            option_result.update({
+                                'max_daily_move': stock_data.get('max_daily_move'),
+                                'max_daily_move_date': stock_data.get('max_daily_move_date'),
+                                'max_weekly_move': stock_data.get('max_weekly_move'),
+                                'max_weekly_move_start': stock_data.get('max_weekly_move_start'),
+                                'max_weekly_move_end': stock_data.get('max_weekly_move_end')
+                            })
+                        except Exception as e:
+                            logger.warning(f"Error adding max movement data: {str(e)}")
+                        
+                        # Calculate CSP Quality Score
+                        try:
+                            # Get historical volatility or use a default
+                            hv = stock_data.get('historical_volatility', 0.3)
+                            if hv <= 0:
+                                hv = 0.3  # Default historical volatility
+                                
+                            # Calculate the CSP quality score
+                            csp_score, score_components = calculate_csp_quality_score(
+                                iv=iv,
+                                hv=hv,
+                                rsi=stock_data['rsi'],
+                                premium_per_day=premium_per_day,
+                                otm_probability=otm_prob,
+                                strike_price=strike,
+                                current_price=stock_data['price'],
+                                ma50=stock_data['ma50']
+                            )
+                            
+                            # Add the score and components to the option result
+                            option_result['csp_quality_score'] = csp_score
+                            option_result['score_components'] = score_components
+                            
+                            # Add detailed debug logging
+                            logger.debug(f"CSP Quality Score components for {ticker} at ${strike}:")
+                            logger.debug(f"  IV/HV Score: {score_components.get('iv_hv_score', 0):.1f}/10 (weight: 30%)")
+                            logger.debug(f"  RSI Score: {score_components.get('rsi_score', 0):.1f}/10 (weight: 25%)")
+                            logger.debug(f"  Premium Score: {score_components.get('premium_score', 0):.1f}/10 (weight: 25%)")
+                            logger.debug(f"  OTM Prob Score: {score_components.get('otm_score', 0):.1f}/10 (weight: 10%)")
+                            logger.debug(f"  Support Score: {score_components.get('support_score', 0):.1f}/10 (weight: 10%)")
+                            
+                            # Add a signal based on the score
+                            if csp_score >= 8:
+                                option_result['csp_signal'] = 'EXCELLENT'
+                            elif csp_score >= 6:
+                                option_result['csp_signal'] = 'GOOD'
+                            elif csp_score >= 4:
+                                option_result['csp_signal'] = 'FAIR'
+                            else:
+                                option_result['csp_signal'] = 'POOR'
+                                
+                            logger.debug(f"CSP Quality Score for {ticker} at ${strike}: {csp_score:.1f} ({option_result['csp_signal']})")
+                            
+                        except Exception as e:
+                            logger.error(f"Error calculating CSP quality score: {str(e)}")
+                            # Default values if calculation fails
+                            option_result['csp_quality_score'] = 0
+                            option_result['score_components'] = {}
+                            option_result['csp_signal'] = 'N/A'
+                        
                         results.append(option_result)
                         
                     except Exception as e:
@@ -1480,6 +1602,191 @@ def open_browser(port=8086):
     """
     time.sleep(1.5)  # Short delay to ensure server has started
     webbrowser.open(f'http://localhost:{port}')
+
+def calculate_max_daily_move(ticker, period='3mo'):
+    """Calculate the maximum single-day movement for a stock within a period."""
+    try:
+        # Retrieve historical data for the stock
+        stock_data = get_ticker_with_headers(ticker).history(period=period)
+        
+        if len(stock_data) == 0:
+            logging.warning(f"No historical data found for {ticker}.")
+            return None, None
+        
+        # Calculate daily high-to-low percentage movement
+        stock_data['daily_move'] = ((stock_data['High'] - stock_data['Low']) / stock_data['Low']) * 100
+        
+        # Find the maximum daily movement and its date
+        max_idx = stock_data['daily_move'].idxmax()
+        max_move = stock_data.loc[max_idx, 'daily_move']
+        max_date = max_idx.strftime('%Y-%m-%d')
+        
+        logging.info(f"Max daily move for {ticker}: {max_move:.2f}% on {max_date}")
+        return max_move, max_date
+    except Exception as e:
+        logging.error(f"Error calculating max daily move for {ticker}: {str(e)}")
+        return None, None
+
+def calculate_max_weekly_move(ticker, period='3mo'):
+    """Calculate the maximum 5-day (weekly) movement for a stock within a period."""
+    try:
+        # Retrieve historical data for the stock
+        stock_data = get_ticker_with_headers(ticker).history(period=period)
+        
+        if len(stock_data) < 5:
+            logging.warning(f"Insufficient historical data for {ticker} to calculate weekly movement.")
+            return None, None, None
+        
+        # Calculate 5-day rolling high and low
+        stock_data['5d_high'] = stock_data['High'].rolling(window=5).max()
+        stock_data['5d_low'] = stock_data['Low'].rolling(window=5).min()
+        
+        # Calculate the 5-day price range as a percentage
+        stock_data['weekly_move'] = ((stock_data['5d_high'] - stock_data['5d_low']) / stock_data['5d_low']) * 100
+        
+        # Skip the first 4 days since they don't have complete 5-day windows
+        valid_data = stock_data.iloc[4:]
+        
+        if len(valid_data) == 0:
+            return None, None, None
+        
+        # Find the maximum weekly movement and its end date
+        max_idx = valid_data['weekly_move'].idxmax()
+        max_move = valid_data.loc[max_idx, 'weekly_move']
+        end_date = max_idx.strftime('%Y-%m-%d')
+        
+        # Calculate the start date (5 trading days before)
+        start_idx = stock_data.index.get_loc(max_idx) - 4
+        if start_idx >= 0:
+            start_date = stock_data.index[start_idx].strftime('%Y-%m-%d')
+        else:
+            start_date = "N/A"
+        
+        logging.info(f"Max weekly move for {ticker}: {max_move:.2f}% from {start_date} to {end_date}")
+        return max_move, start_date, end_date
+    except Exception as e:
+        logging.error(f"Error calculating max weekly move for {ticker}: {str(e)}")
+        return None, None, None
+
+def calculate_csp_quality_score(iv, hv, rsi, premium_per_day, otm_probability, strike_price, current_price, ma50):
+    """
+    Calculate a CSP Quality Score (0-10) based on multiple factors.
+    
+    Parameters:
+    - iv: Implied volatility (decimal, not percentage)
+    - hv: Historical volatility (decimal, not percentage)
+    - rsi: Relative Strength Index (0-100)
+    - premium_per_day: Premium earned per day
+    - otm_probability: Probability of option expiring out-of-the-money (decimal)
+    - strike_price: Option strike price
+    - current_price: Current stock price
+    - ma50: 50-day moving average price
+    
+    Returns:
+    - score: Quality score from 0-10
+    - components: Dict with individual component scores
+    """
+    try:
+        components = {}
+        
+        # IV/HV Ratio Component (30% weight)
+        # Lower values are better (options priced below historical volatility)
+        if hv > 0:
+            iv_hv_ratio = iv / hv
+            if iv_hv_ratio <= 0.8:
+                components['iv_hv_score'] = 10  # Significantly underpriced options
+            elif iv_hv_ratio <= 0.9:
+                components['iv_hv_score'] = 8
+            elif iv_hv_ratio <= 1.0:
+                components['iv_hv_score'] = 6
+            elif iv_hv_ratio <= 1.1:
+                components['iv_hv_score'] = 4
+            elif iv_hv_ratio <= 1.2:
+                components['iv_hv_score'] = 2
+            else:
+                components['iv_hv_score'] = 0  # Significantly overpriced options
+        else:
+            components['iv_hv_score'] = 5  # Neutral if HV data is not available
+        
+        # RSI Component (25% weight)
+        # Lower RSI values are better for CSPs (oversold conditions)
+        if rsi <= 30:
+            components['rsi_score'] = 10  # Oversold conditions, good for CSP
+        elif rsi <= 40:
+            components['rsi_score'] = 8
+        elif rsi <= 50:
+            components['rsi_score'] = 6
+        elif rsi <= 60:
+            components['rsi_score'] = 4
+        elif rsi <= 70:
+            components['rsi_score'] = 2
+        else:
+            components['rsi_score'] = 0  # Overbought conditions, poor for CSP
+        
+        # Premium Quality Component (25% weight)
+        # Higher premium per day relative to strike price is better
+        annualized_return = (premium_per_day * 365) / strike_price
+        if annualized_return >= 0.40:  # 40% annualized return
+            components['premium_score'] = 10
+        elif annualized_return >= 0.30:
+            components['premium_score'] = 8
+        elif annualized_return >= 0.20:
+            components['premium_score'] = 6
+        elif annualized_return >= 0.10:
+            components['premium_score'] = 4
+        elif annualized_return >= 0.05:
+            components['premium_score'] = 2
+        else:
+            components['premium_score'] = 0
+        
+        # OTM Probability Component (10% weight)
+        # Higher probability of expiring OTM is better
+        if otm_probability >= 0.95:
+            components['otm_score'] = 10  # Very safe
+        elif otm_probability >= 0.90:
+            components['otm_score'] = 8
+        elif otm_probability >= 0.80:
+            components['otm_score'] = 6
+        elif otm_probability >= 0.70:
+            components['otm_score'] = 4
+        elif otm_probability >= 0.60:
+            components['otm_score'] = 2
+        else:
+            components['otm_score'] = 0  # High risk of assignment
+        
+        # Technical Support Component (10% weight)
+        # Strike price near or below moving average support levels is better
+        if ma50 > 0:
+            strike_to_ma_ratio = strike_price / ma50
+            if strike_to_ma_ratio <= 0.90:  # Strike is 10% or more below 50MA (strong support)
+                components['support_score'] = 10
+            elif strike_to_ma_ratio <= 0.95:
+                components['support_score'] = 8
+            elif strike_to_ma_ratio <= 1.0:
+                components['support_score'] = 6
+            elif strike_to_ma_ratio <= 1.05:
+                components['support_score'] = 4
+            elif strike_to_ma_ratio <= 1.10:
+                components['support_score'] = 2
+            else:
+                components['support_score'] = 0  # Strike far above support levels
+        else:
+            components['support_score'] = 5  # Neutral if MA data is not available
+        
+        # Calculate weighted score
+        final_score = (
+            components['iv_hv_score'] * 0.30 + 
+            components['rsi_score'] * 0.25 + 
+            components['premium_score'] * 0.25 + 
+            components['otm_score'] * 0.10 + 
+            components['support_score'] * 0.10
+        )
+        
+        return round(final_score, 1), components
+        
+    except Exception as e:
+        logging.error(f"Error calculating CSP quality score: {str(e)}")
+        return 0, {}
 
 if __name__ == '__main__':
     """

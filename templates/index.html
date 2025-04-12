@@ -275,29 +275,17 @@
                 </div>
                 <div class="col-md-2 mb-3">
                     <label for="timeframeSelect" class="form-label">Timeframe</label>
-<<<<<<< HEAD
-                    <!-- Default timeframe set to 2 weeks (14 days) for a balanced analysis period -->
                     <select id="timeframeSelect" class="form-select">
                         <option value="7">1 Week</option>
                         <option value="14" selected>2 Weeks</option>
                         <option value="30">1 Month</option>
-=======
-                    <select id="timeframeSelect" class="form-select">
-                        <option value="7">1 Week</option>
-                        <option value="14">2 Weeks</option>
-                        <option value="30" selected>1 Month</option>
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                         <option value="60">2 Months</option>
                     </select>
                 </div>
                 <div class="col-md-2 mb-3">
                     <label for="minOtmProb" class="form-label">Min OTM Probability (%)</label>
-<<<<<<< HEAD
                     <!-- Default probability threshold set to 75% for moderate risk tolerance -->
                     <input type="number" class="form-control" id="minOtmProb" value="75" min="0" max="100">
-=======
-                    <input type="number" class="form-control" id="minOtmProb" value="90" min="0" max="100">
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                 </div>
                 <div class="col-md-2 mb-3">
                     <label for="maxBudget" class="form-label">Max Cash Required ($)</label>
@@ -347,7 +335,6 @@
                     </div>
                 </div>
             </div>
-<<<<<<< HEAD
             
             <!-- Top Choices Section -->
             <div id="topChoices" class="mt-4">
@@ -360,8 +347,6 @@
             </div>
             
             <!-- Summary Section -->
-=======
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
             <div id="summary" class="mt-3">
                 <div class="alert alert-info">
                     <strong>Summary:</strong> Found 
@@ -372,19 +357,6 @@
                     <div class="mt-2">
                         <span class="badge bg-success"><span id="greedCount">0</span> Greed</span>
                         <span class="badge bg-danger"><span id="fearCount">0</span> Fear</span>
-<<<<<<< HEAD
-=======
-                </div>
-            </div>
-        </div>
-        
-            <!-- Top Choices Section -->
-            <div id="topChoices" class="mt-4">
-                <h4>Top Choices</h4>
-                <div class="row" id="topChoicesContent">
-                    <div class="col-md-12">
-                        <p class="text-center text-muted">Use the Refresh Data button to fetch top CSP opportunities</p>
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                     </div>
                 </div>
             </div>
@@ -433,11 +405,8 @@
                             <strong>OTM Prob:</strong> Probability the option will expire worthless<br>
                             <strong>IV:</strong> Implied volatility (higher = more premium but more risk)<br>
                             <strong>RSI:</strong> Relative Strength Index (under 30 = potentially oversold, over 70 = potentially overbought)<br>
-<<<<<<< HEAD
                             <strong>Max 1D Move:</strong> Maximum single-day (24hr) price movement as a percentage in the last 30 days<br>
                             <strong>Max 5D Move:</strong> Maximum 5-day (weekly) price movement as a percentage in the last 30 days<br>
-=======
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                             <strong>CSP Score:</strong> Weighted score (0-10) combining IV/HV ratio, RSI, premium quality, OTM probability, and technical support
                             </div>
                         </div>
@@ -461,7 +430,6 @@
             </div>
             
             <div class="explanation-section">
-<<<<<<< HEAD
                 <h4>Historical Price Movement Metrics</h4>
                 <p>Understanding a stock's historical price movement is crucial for CSP strategies:</p>
                 <ul>
@@ -477,8 +445,6 @@
             </div>
             
             <div class="explanation-section">
-=======
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                 <h4>Tips for Success</h4>
                 <ol>
                     <li>Sell CSPs on stocks you wouldn't mind owning at the strike price</li>
@@ -732,129 +698,160 @@
             table = new Tabulator("#resultsTable", {
                 data: [],
                 layout: "fitColumns",
+                pagination: false,
+                height: "70vh",
                 columns: [
-                    {title: "Stock", field: "ticker", sorter: "string", width: 80},
-                    {title: "Company", field: "company", sorter: "string", width: 150},
-                    {title: "Strike", field: "strike", sorter: "number", formatter: "money", width: 80},
-                    {title: "Current", field: "current_price", sorter: "number", formatter: "money", width: 80},
-                    {title: "MA50", field: "ma50", sorter: "number", formatter: "money", width: 80},
+                    // IDENTIFICATION & STOCK INFO GROUP
+                    {title: "", field: "favorite", formatter: function(cell) {
+                        const ticker = cell.getData().ticker;
+                        const isFavorite = favorites.some(f => f.ticker === ticker);
+                        return `<i class="fa${isFavorite ? 's' : 'r'} fa-star favorite-star text-${isFavorite ? 'warning' : 'light'}" data-ticker="${ticker}"></i>`;
+                    }, width: 30, headerSort: false, hozAlign: "center"},
+                    
+                    {title: "Stock", field: "ticker", formatter: function(cell) {
+                        return `<strong>${cell.getValue()}</strong>`;
+                    }, width: 70},
+                    
+                    {title: "Company", field: "company"},
+                    
+                    {title: "Current", field: "current_price", sorter: "number", formatter: function(cell) {
+                        return `$${cell.getValue().toFixed(2)}`;
+                    }, width: 90},
+                    
+                    {title: "Strike", field: "strike", sorter: "number", formatter: function(cell) {
+                        return `$${cell.getValue().toFixed(2)}`;
+                    }, width: 90},
+                    
                     {title: "% Below", field: "percent_below", sorter: "number", formatter: function(cell) {
                         const value = cell.getValue();
-                        return value ? value.toFixed(2) + '%' : '';
-                    }, width: 80},
-                    {title: "Expiry", field: "expiry", sorter: "date", width: 100},
-                    {title: "Days", field: "days_to_expiry", sorter: "number", width: 70},
-                    {title: "Premium", field: "premium", sorter: "number", formatter: "money", width: 90},
-                    {title: "$/Day", field: "premium_per_day", sorter: "number", formatter: function(cell) {
-                        const value = cell.getValue();
-                        return value ? '$' + value.toFixed(2) : '$0.00';
-                    }, width: 90},
-                    {title: "Return %", field: "return_percent", sorter: "number", formatter: function(cell) {
-                        const value = cell.getValue();
-                        return value ? value.toFixed(2) + '%' : '0%';
-                    }, width: 90},
-                    {title: "OTM Prob", field: "otm_probability", sorter: "number", formatter: function(cell) {
-                        const value = cell.getValue();
-                        return value ? value.toFixed(1) + '%' : '0%';
-                    }, width: 90},
-                    {title: "IV", field: "implied_volatility", sorter: "number", formatter: function(cell) {
-                        const value = cell.getValue();
-                        return value ? (value * 100).toFixed(1) + '%' : '0%';
-                    }, width: 70},
-<<<<<<< HEAD
+                        return `${value.toFixed(2)}%`;
+                    }, width: 90, tooltip: "Percentage below current price"},
                     
-                    // Max 1D Move column with enhanced date display showing the specific date when the max movement occurred
-                    {title: "Max 1D Move", field: "max_daily_move", sorter: "number", formatter: function(cell) {
+                    // KEY OPTION METRICS GROUP
+                    {title: "Premium", field: "premium", sorter: "number", formatter: function(cell) {
+                        return `$${cell.getValue().toFixed(2)}`;
+                    }, width: 90},
+                    
+                    {title: "$/Day", field: "premium_per_day", sorter: "number", formatter: function(cell) {
+                        return `$${cell.getValue().toFixed(2)}`;
+                    }, width: 90},
+                    
+                    {title: "Return %", field: "return_percent", sorter: "number", formatter: function(cell) {
+                        return `${cell.getValue().toFixed(2)}%`;
+                    }, width: 90},
+                    
+                    {title: "Days", field: "days_to_expiry", sorter: "number", width: 70},
+                    
+                    {title: "Expiry", field: "expiry", sorter: "date", sorterParams: {
+                        format: "YYYY-MM-DD"
+                    }, width: 100},
+                    
+                    // RISK ASSESSMENT GROUP
+                    // CSP Score column with visual indicator and components
+                    {title: "CSP Score", field: "csp_quality_score", sorter: "number", formatter: function(cell) {
                         const value = cell.getValue();
-                        const date = cell.getData().max_daily_move_date || "N/A";
                         if (!value && value !== 0) return "N/A";
-                        return `<div>${value.toFixed(1)}%</div><div><small class="text-muted">${date}</small></div>`;
-                    }, width: 110, tooltip: function(cell) {
-                        const date = cell.getData().max_daily_move_date || "N/A";
-                        return `Maximum single-day price movement (${cell.getValue()}%) occurred on ${date}`;
+                        
+                        // Color coding based on score ranges
+                        let colorClass = "";
+                        if (value >= 8) colorClass = "text-success"; // Good scores in green
+                        else if (value >= 6) colorClass = "text-primary"; // Decent scores in blue
+                        else if (value >= 4) colorClass = "text-warning"; // Average scores in yellow/orange
+                        else colorClass = "text-danger"; // Poor scores in red
+                        
+                        // Get components, if available
+                        const components = cell.getData().score_components || {};
+                        
+                        let componentHtml = '';
+                        if (Object.keys(components).length > 0) {
+                            componentHtml = `
+                            <div style="font-size: 0.8em;">
+                                <small>IV/HV: ${components.iv_hv_score?.toFixed(1) || 'N/A'}</small><br>
+                                <small>RSI: ${components.rsi_score?.toFixed(1) || 'N/A'}</small><br>
+                                <small>Premium: ${components.premium_score?.toFixed(1) || 'N/A'}</small><br>
+                                <small>OTM: ${components.otm_score?.toFixed(1) || 'N/A'}</small><br>
+                                <small>Support: ${components.support_score?.toFixed(1) || 'N/A'}</small>
+                            </div>`;
+                        }
+                        
+                        return `<div class="${colorClass} fw-bold">${value.toFixed(1)}</div>${componentHtml}`;
+                    }, width: 120, tooltip: function(cell) {
+                        const components = cell.getData().score_components;
+                        if (!components) return "CSP Quality Score (0-10)";
+                        
+                        let tooltip = "CSP Quality Score Components:\n";
+                        if (components.iv_hv_score !== undefined) tooltip += `• IV/HV Ratio: ${components.iv_hv_score.toFixed(1)}/10\n`;
+                        if (components.rsi_score !== undefined) tooltip += `• RSI: ${components.rsi_score.toFixed(1)}/10\n`;
+                        if (components.premium_score !== undefined) tooltip += `• Premium Quality: ${components.premium_score.toFixed(1)}/10\n`;
+                        if (components.otm_score !== undefined) tooltip += `• OTM Probability: ${components.otm_score.toFixed(1)}/10\n`;
+                        if (components.support_score !== undefined) tooltip += `• Technical Support: ${components.support_score.toFixed(1)}/10`;
+                        
+                        return tooltip;
                     }},
                     
-                    // Max 5D Move column with enhanced date range display showing both start and end dates of the 5-day window
-                    {title: "Max 5D Move", field: "max_weekly_move", sorter: "number", formatter: function(cell) {
+                    {title: "Prob", field: "otm_probability", sorter: "number", formatter: function(cell) {
+                        return `${cell.getValue().toFixed(1)}%`;
+                    }, width: 80, tooltip: "Probability of expiring Out-of-The-Money"},
+                    
+                    // Add Max 1D Move column
+                    {title: "Max 1D", field: "max_daily_move", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        const date = cell.getData().max_daily_move_date;
+                        if (!value && value !== 0) return "N/A";
+                        return `<div>${value.toFixed(2)}%</div><div><small class="text-muted">${date || 'N/A'}</small></div>`;
+                    }, tooltip: function(cell) {
+                        const date = cell.getData().max_daily_move_date;
+                        if (!date) return "Maximum 1-day price movement in the last 30 days";
+                        return `Maximum 1-day price movement (${cell.getValue()}%) occurred on ${date}`;
+                    }},
+                    
+                    // Add Max 5D Move column
+                    {title: "Max 5D", field: "max_weekly_move", sorter: "number", formatter: function(cell) {
                         const value = cell.getValue();
                         const start = cell.getData().max_weekly_move_start || "N/A";
                         const end = cell.getData().max_weekly_move_end || "N/A";
                         if (!value && value !== 0) return "N/A";
-                        return `<div>${value.toFixed(1)}%</div><div><small class="text-muted">${start} to ${end}</small></div>`;
-                    }, width: 130, tooltip: function(cell) {
+                        return `<div>${value.toFixed(2)}%</div><div><small class="text-muted">${start} to ${end}</small></div>`;
+                    }, tooltip: function(cell) {
                         const start = cell.getData().max_weekly_move_start || "N/A";
                         const end = cell.getData().max_weekly_move_end || "N/A";
                         return `Maximum 5-day price movement (${cell.getValue()}%) occurred between ${start} and ${end}`;
                     }},
-=======
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
+                    
+                    // TECHNICAL INDICATORS GROUP
                     {title: "RSI", field: "rsi", sorter: "number", formatter: function(cell) {
                         const value = cell.getValue();
-                        return value ? value.toFixed(1) : '0';
-                    }, width: 70},
-                    {title: "F/G", field: "fear_greed", width: 80},
-                    {title: "CSP Score", field: "csp_quality_score", formatter: function(cell) {
-                        const score = cell.getValue();
-                        if (!score && score !== 0) return "";
+                        if (!value && value !== 0) return "N/A";
                         
-                        let className = '';
-                        let signal = '';
+                        let className = "text-secondary";
+                        if (value <= 30) className = "text-danger"; // Oversold
+                        else if (value >= 70) className = "text-success"; // Overbought
                         
-                        if (score >= 9) {
-                            className = 'text-success fw-bold';
-                            signal = 'EXCEPTIONAL';
-                        } else if (score >= 7) {
-                            className = 'text-primary fw-bold';
-                            signal = 'EXCELLENT';
-                        } else if (score >= 5) {
-                            className = 'text-info fw-bold';
-                            signal = 'GOOD';
-                        } else if (score >= 3) {
-                            className = 'text-warning';
-                            signal = 'FAIR';
-                        } else {
-                            className = 'text-danger';
-                            signal = 'POOR';
-                        }
-                        
-                        return `<div><span class="${className}">${score.toFixed(1)}</span></div>
-                               <small class="${className}">${signal}</small>`;
-                    }, width: 120},
-                    {title: "", field: "favorite", formatter: function(cell) {
-                        const ticker = cell.getData().ticker;
-                        const isFavorite = favorites.some(f => f.ticker === ticker);
-                        return `<i class="fas fa-star favorite-star ${isFavorite ? 'text-warning' : 'text-light'}" data-ticker="${ticker}"></i>`;
-                    }, width: 30, headerSort: false, cellClick: function(e, cell) {
-                        e.stopPropagation(); // Stop cell click propagation
-                        
-                        console.log("Star cell clicked");
-                        
-                        // Get ticker and company from cell data
-                        const ticker = cell.getData().ticker;
-                        const company = cell.getData().company;
-                        
-                        // Toggle favorite status
-                        toggleFavorite(ticker, company);
-                    }}
-                ],
-                initialSort: [
-                    {column: "return_percent", dir: "desc"}
-                ],
-                rowFormatter: function(row) {
-                    const data = row.getData();
+                        return `<span class="${className}">${value.toFixed(1)}</span>`;
+                    }, width: 80, tooltip: "Relative Strength Index (under 30 = oversold, over 70 = overbought)"},
                     
-                    // Use the category field directly
-                    switch(data.category) {
-                        case 'Best':
-                            row.getElement().classList.add("best");
-                            break;
-                        case 'Better':
-                            row.getElement().classList.add("better");
-                            break;
-                        case 'Good':
-                            row.getElement().classList.add("good");
-                            break;
-                    }
+                    {title: "MA50", field: "ma50", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        if (!value) return "N/A";
+                        return `$${value.toFixed(2)}`;
+                    }, tooltip: "50-day Moving Average price"},
+                    
+                    {title: "IV", field: "implied_volatility", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue() * 100; // Convert decimal to percentage
+                        return `${value.toFixed(1)}%`;
+                    }, width: 80, tooltip: "Implied Volatility - market's forecast of likely movement"},
+                    
+                    {title: "F/G", field: "fear_greed", formatter: function(cell) {
+                        const value = cell.getValue();
+                        let className = value === "Fear" ? "text-danger" : "text-success";
+                        return `<span class="${className}">${value}</span>`;
+                    }, width: 80, tooltip: "Fear/Greed indicator based on RSI"}
+                ],
+                rowClick: function(e, row) {
+                    if ($(e.target).hasClass('table-star')) return; // Don't trigger on star click
+                    
+                    // Toggle row selection
+                    row.toggleSelect();
                 }
             });
             
@@ -1197,19 +1194,10 @@
                     
                     console.log('Stocks to refresh:', stocks);
                     
-<<<<<<< HEAD
-                    // Get filter values with new defaults:
-                    // - 75% min probability (lowered from 90% for less restrictive filtering)
-                    // - 14 days timeframe (changed from 30 days for shorter-term opportunities)
-                    const minProb = parseFloat($('#minOtmProb').val() || 75);
-                    const maxBudget = parseFloat($('#maxBudget').val() || 10000);
-                    const timeframeValue = parseInt($('#timeframeSelect').val() || 14);
-=======
                     // Get filter values
                     const minProb = parseFloat($('#minOtmProb').val() || 90);
                     const maxBudget = parseFloat($('#maxBudget').val() || 10000);
                     const timeframeValue = parseInt($('#timeframeSelect').val() || 30);
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
                     
                     console.log('Filter values:', { minProb, maxBudget, timeframeValue });
                     
@@ -1316,11 +1304,8 @@
                     data: data,
                     layout: "fitColumns",
                     responsiveLayout: "collapse",
-                    pagination: "local",
-                    paginationSize: 15,
-                    paginationSizeSelector: [10, 15, 25, 50, 100],
-                    movableColumns: true,
-                    height: "calc(100vh - 280px)",
+                    pagination: false,
+                    height: "70vh",
                     initialSort: [
                         {column: "premium_per_day", dir: "desc"}
                     ],
@@ -1329,60 +1314,31 @@
                             const data = cell.getRow().getData();
                             const ticker = data.ticker;
                             const isFavorite = favorites.some(f => f.ticker === ticker);
-                            return `<i class="fa fa-star table-star ${isFavorite ? 'favorite' : ''}" data-ticker="${ticker}" data-name="${data.company || ''}"></i>`;
-                        }, width: 30, headerSort: false, hozAlign: "center"},
-                        {title: "Category", field: "category", width: 100, formatter: function(cell) {
-                            if (!cell.getValue()) return "";
-                            const category = cell.getValue();
-                            let className = '';
-                            if (category === 'Best') className = 'text-success';
-                            else if (category === 'Better') className = 'text-primary';
-                            else if (category === 'Good') className = 'text-warning';
-                            return `<span class="${className} fw-bold">${category}</span>`;
+                            return `<i class="fa fa-star table-star ${isFavorite ? 'favorite' : ''}" data-ticker="${ticker}"></i>`;
+                        }, width: 40, headerSort: false, hozAlign: "center", cellClick: function(e, cell) {
+                            const ticker = cell.getData().ticker;
+                            const company = cell.getData().company;
+                            const current = cell.getData().current_price;
+                            toggleFavorite(ticker, company, current);
+                            updateTableStars();
                         }},
-                        {title: "Ticker", field: "ticker", width: 100},
-                        {title: "Company", field: "company", width: 200},
+                        {title: "Stock", field: "ticker", width: 80},
+                        {title: "Company", field: "company", width: 150},
                         {title: "Current", field: "current_price", formatter: "money", formatterParams: {precision: 2}, width: 100},
-                        {title: "MA50", field: "ma50", formatter: "money", formatterParams: {precision: 2}, width: 100},
-                        {title: "% Below", field: "percent_below", formatter: function(cell) {
+                        {title: "F/G", field: "fear_greed", formatter: function(cell) {
                             const value = cell.getValue();
-                            return value ? value.toFixed(2) + '%' : '';
-                        }, width: 100},
-                        {title: "RSI", field: "rsi", formatter: function(cell) {
-                            const val = cell.getValue();
-                            let className = '';
-                            if (val > 70) className = 'text-danger';
-                            else if (val > 50) className = 'text-warning';
-                            else if (val < 30) className = 'text-success';
-                            return `<span class="${className}">${val ? val.toFixed(1) : ''}</span>`;
-                        }, width: 80},
-                        {title: "F/G", field: "fear_greed", width: 80},
-                        {title: "CSP Score", field: "csp_quality_score", formatter: function(cell) {
-                            const score = cell.getValue();
-                            if (!score && score !== 0) return "";
+                            let className = "";
+                            let signal = value;
                             
-                            let className = '';
-                            let signal = '';
-                            
-                            if (score >= 9) {
-                                className = 'text-success fw-bold';
-                                signal = 'EXCEPTIONAL';
-                            } else if (score >= 7) {
-                                className = 'text-primary fw-bold';
-                                signal = 'EXCELLENT';
-                            } else if (score >= 5) {
-                                className = 'text-info fw-bold';
-                                signal = 'GOOD';
-                            } else if (score >= 3) {
-                                className = 'text-warning';
-                                signal = 'FAIR';
+                            if (value === "Fear") {
+                                className = "text-danger";
+                            } else if (value === "Greed") {
+                                className = "text-success";
                             } else {
-                                className = 'text-danger';
-                                signal = 'POOR';
+                                className = "text-secondary";
                             }
                             
-                            return `<div><span class="${className}">${score.toFixed(1)}</span></div>
-                                   <small class="${className}">${signal}</small>`;
+                            return `<small class="${className}">${signal}</small>`;
                         }, width: 120},
                         {title: "Strike", field: "strike", formatter: "money", formatterParams: {precision: 2}, width: 100},
                         {title: "Premium", field: "premium", formatter: "money", formatterParams: {precision: 2}, width: 100},
@@ -1400,35 +1356,98 @@
                         {title: "IV", field: "implied_volatility", formatter: function(cell) {
                             return (cell.getValue() * 100).toFixed(1) + '%';
                         }, width: 80},
-<<<<<<< HEAD
-                        
-                        // Max 1D Move column with enhanced date display showing the specific date when the max movement occurred
-                        {title: "Max 1D Move", field: "max_daily_move", formatter: function(cell) {
+                        {title: "% Below", field: "percent_below", formatter: function(cell) {
                             const value = cell.getValue();
-                            const date = cell.getData().max_daily_move_date || "N/A";
+                            return value ? value.toFixed(1) + '%' : '0%';
+                        }, width: 70},
+                        
+                        // Add 50-day MA column after IV
+                        {title: "MA50", field: "ma50", sorter: "number", formatter: function(cell) {
+                            const value = cell.getValue();
+                            if (!value) return "N/A";
+                            return `$${value.toFixed(2)}`;
+                        }, tooltip: "50-day Moving Average price"},
+                        
+                        // Add Max 1D Move column
+                        {title: "Max 1D", field: "max_daily_move", sorter: "number", formatter: function(cell) {
+                            const value = cell.getValue();
+                            const date = cell.getData().max_daily_move_date;
                             if (!value && value !== 0) return "N/A";
-                            return `<div>${value.toFixed(1)}%</div><div><small class="text-muted">${date}</small></div>`;
-                        }, width: 110, tooltip: function(cell) {
-                            const date = cell.getData().max_daily_move_date || "N/A";
-                            return `Maximum single-day price movement (${cell.getValue()}%) occurred on ${date}`;
+                            return `<div>${value.toFixed(2)}%</div><div><small class="text-muted">${date || 'N/A'}</small></div>`;
+                        }, tooltip: function(cell) {
+                            const date = cell.getData().max_daily_move_date;
+                            if (!date) return "Maximum 1-day price movement in the last 30 days";
+                            return `Maximum 1-day price movement (${cell.getValue()}%) occurred on ${date}`;
                         }},
                         
-                        // Max 5D Move column with enhanced date range display showing both start and end dates of the 5-day window
-                        {title: "Max 5D Move", field: "max_weekly_move", formatter: function(cell) {
+                        // Add Max 5D Move column
+                        {title: "Max 5D", field: "max_weekly_move", sorter: "number", formatter: function(cell) {
                             const value = cell.getValue();
                             const start = cell.getData().max_weekly_move_start || "N/A";
                             const end = cell.getData().max_weekly_move_end || "N/A";
                             if (!value && value !== 0) return "N/A";
-                            return `<div>${value.toFixed(1)}%</div><div><small class="text-muted">${start} to ${end}</small></div>`;
-                        }, width: 130, tooltip: function(cell) {
+                            return `<div>${value.toFixed(2)}%</div><div><small class="text-muted">${start} to ${end}</small></div>`;
+                        }, tooltip: function(cell) {
                             const start = cell.getData().max_weekly_move_start || "N/A";
                             const end = cell.getData().max_weekly_move_end || "N/A";
                             return `Maximum 5-day price movement (${cell.getValue()}%) occurred between ${start} and ${end}`;
                         }},
-=======
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
+                        
+                        // CSP Score column with visual indicator and components
+                        {title: "CSP Score", field: "csp_quality_score", sorter: "number", formatter: function(cell) {
+                            const value = cell.getValue();
+                            if (!value && value !== 0) return "N/A";
+                            
+                            // Color coding based on score ranges
+                            let colorClass = "";
+                            if (value >= 8) colorClass = "text-success"; // Good scores in green
+                            else if (value >= 6) colorClass = "text-primary"; // Decent scores in blue
+                            else if (value >= 4) colorClass = "text-warning"; // Average scores in yellow/orange
+                            else colorClass = "text-danger"; // Poor scores in red
+                            
+                            // Get components, if available
+                            const components = cell.getData().score_components || {};
+                            
+                            let componentHtml = '';
+                            if (Object.keys(components).length > 0) {
+                                componentHtml = `
+                                <div style="font-size: 0.8em;">
+                                    <small>IV/HV: ${components.iv_hv_score?.toFixed(1) || 'N/A'}</small><br>
+                                    <small>RSI: ${components.rsi_score?.toFixed(1) || 'N/A'}</small><br>
+                                    <small>Premium: ${components.premium_score?.toFixed(1) || 'N/A'}</small><br>
+                                    <small>OTM: ${components.otm_score?.toFixed(1) || 'N/A'}</small><br>
+                                    <small>Support: ${components.support_score?.toFixed(1) || 'N/A'}</small>
+                                </div>`;
+                            }
+                            
+                            return `<div class="${colorClass} fw-bold">${value.toFixed(1)}</div>${componentHtml}`;
+                        }, width: 120, tooltip: function(cell) {
+                            const components = cell.getData().score_components;
+                            if (!components) return "CSP Quality Score (0-10)";
+                            
+                            let tooltip = "CSP Quality Score Components:\n";
+                            if (components.iv_hv_score !== undefined) tooltip += `• IV/HV Ratio: ${components.iv_hv_score.toFixed(1)}/10\n`;
+                            if (components.rsi_score !== undefined) tooltip += `• RSI: ${components.rsi_score.toFixed(1)}/10\n`;
+                            if (components.premium_score !== undefined) tooltip += `• Premium Quality: ${components.premium_score.toFixed(1)}/10\n`;
+                            if (components.otm_score !== undefined) tooltip += `• OTM Probability: ${components.otm_score.toFixed(1)}/10\n`;
+                            if (components.support_score !== undefined) tooltip += `• Technical Support: ${components.support_score.toFixed(1)}/10`;
+                            
+                            return tooltip;
+                        }},
+                        {title: "RSI", field: "rsi", sorter: "number", formatter: function(cell) {
+                            const value = cell.getValue();
+                            if (!value && value !== 0) return "N/A";
+                            
+                            let className = "text-secondary";
+                            if (value <= 30) className = "text-danger"; // Oversold
+                            else if (value >= 70) className = "text-success"; // Overbought
+                            
+                            return `<span class="${className}">${value.toFixed(1)}</span>`;
+                        }, width: 80, tooltip: "Relative Strength Index (under 30 = oversold, over 70 = overbought)"}
                     ],
                     rowClick: function(e, row) {
+                        if ($(e.target).hasClass('table-star')) return; // Don't trigger on star click
+                        
                         // Toggle row selection
                         row.toggleSelect();
                     }
@@ -1527,7 +1546,7 @@
                     }
                     
                     scoreHtml = `<div class="mt-2">
-                        <strong>CSP Score:</strong> <span class="${scoreClass} fw-bold">${pick.csp_quality_score.toFixed(1)}</span>
+                        <strong>CSP Score:</strong> <span class="${scoreClass} fw-bold">${pick.csp_quality_score?.toFixed(1) || 'N/A'}</span>
                         <span class="badge ${scoreClass.replace('text-', 'bg-')}">${signal}</span>
                     </div>`;
                 }
@@ -1542,12 +1561,21 @@
                                     <div><strong>Premium:</strong> $${pick.premium.toFixed(2)} | <strong>$/Day:</strong> $${pick.premium_per_day.toFixed(2)}</div>
                                     <div><strong>Expiry:</strong> ${pick.expiry} (${pick.days_to_expiry} days)</div>
                                     <div><strong>OTM Prob:</strong> ${pick.otm_probability.toFixed(1)}% | <strong>Return:</strong> ${pick.return_percent.toFixed(2)}%</div>
-<<<<<<< HEAD
-                                    <div><strong>Volatility:</strong> IV ${(pick.implied_volatility * 100).toFixed(1)}% | <strong>Max Moves:</strong> 1-Day ${pick.max_daily_move?.toFixed(1) || '0.0'}%, 5-Day ${pick.max_weekly_move?.toFixed(1) || '0.0'}%</div>
-=======
->>>>>>> fb060213a23819026b017f6c53be925bcef67014
+                                    <div><strong>Volatility:</strong> IV ${(pick.implied_volatility * 100).toFixed(1)}% | <strong>MA50:</strong> $${pick.ma50?.toFixed(2) || 'N/A'}</div>
+                                    <div><strong>Max 1D Move:</strong> ${pick.max_daily_move?.toFixed(1) || '0.0'}% on ${pick.max_daily_move_date || 'N/A'}</div>
+                                    <div><strong>Max 5D Move:</strong> ${pick.max_weekly_move?.toFixed(1) || '0.0'}% (${pick.max_weekly_move_start || 'N/A'} to ${pick.max_weekly_move_end || 'N/A'})</div>
                                     <div><strong>Category:</strong> <span class="${pick.category === 'Best' ? 'text-success' : pick.category === 'Better' ? 'text-primary' : 'text-warning'} fw-bold">${pick.category || 'N/A'}</span></div>
                                     ${scoreHtml}
+                                    <div class="mt-2">
+                                        <strong>CSP Score Components:</strong>
+                                        <div class="small">
+                                            <div><strong>IV/HV Ratio:</strong> ${pick.score_components?.iv_hv_score?.toFixed(1) || 'N/A'}/10</div>
+                                            <div><strong>RSI:</strong> ${pick.score_components?.rsi_score?.toFixed(1) || 'N/A'}/10</div>
+                                            <div><strong>Premium Quality:</strong> ${pick.score_components?.premium_score?.toFixed(1) || 'N/A'}/10</div>
+                                            <div><strong>OTM Probability:</strong> ${pick.score_components?.otm_score?.toFixed(1) || 'N/A'}/10</div>
+                                            <div><strong>Technical Support:</strong> ${pick.score_components?.support_score?.toFixed(1) || 'N/A'}/10</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
