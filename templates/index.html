@@ -1,0 +1,2791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doby Trades - CSP Finder</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Tabulator CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tabulator-tables@5.4.4/dist/css/tabulator.min.css" rel="stylesheet">
+    
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Core colors */
+            --primary: #00C805;
+            --primary-dark: #00A804;
+            --primary-light: #E3F7E3;
+            --secondary: #5AC4F5;
+            --secondary-dark: #3AA6D9;
+            --danger: #FF5B5B;
+            --warning: #FFBD59;
+            --success: #00C805;
+            --info: #5AC4F5;
+            
+            /* Neutrals */
+            --bg-color: #FAFAFA;
+            --card-bg: #FFFFFF;
+            --hover-bg: #F5F8FA;
+            --border-color: #E6ECF0;
+            --border-light: #F1F5F9;
+            
+            /* Text colors */
+            --text-primary: #1E2022;
+            --text-secondary: #626567;
+            --text-muted: #98A3A9;
+            --text-white: #FFFFFF;
+            
+            /* Semantic colors */
+            --price-up: #00C805;
+            --price-down: #FF5B5B;
+            --select-bg: rgba(0, 200, 5, 0.1);
+            --select-hover-bg: rgba(0, 200, 5, 0.15);
+            
+            /* Category colors */
+            --category-best: #00C805;
+            --category-better: #7AC405;
+            --category-good: #C4A805;
+            
+            /* Shadows */
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
+            
+            /* Sizing */
+            --border-radius: 8px;
+            --border-radius-sm: 4px;
+            --border-radius-lg: 12px;
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            font-family: var(--font-family);
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            padding-bottom: 2.5rem;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--secondary);
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+        }
+        
+        h3 {
+            font-size: 1.5rem;
+        }
+        
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            user-select: none;
+            border: 1px solid transparent;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            border-radius: var(--border-radius);
+            transition: all 0.2s ease-in-out;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn:focus, .btn:hover {
+            text-decoration: none;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
+        }
+        
+        .btn:disabled {
+            opacity: 0.65;
+            pointer-events: none;
+        }
+        
+        .btn i, .btn svg {
+            margin-right: 0.5rem;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.85rem;
+            border-radius: calc(var(--border-radius) * 0.85);
+        }
+        
+        .btn-lg {
+            padding: 0.75rem 1.5rem;
+            font-size: 1.1rem;
+            border-radius: calc(var(--border-radius) * 1.15);
+        }
+        
+        .btn-primary {
+            color: #fff;
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+        
+        .btn-outline-primary {
+            color: var(--primary);
+            background-color: transparent;
+            border-color: var(--primary);
+        }
+        
+        .btn-outline-primary:hover, .btn-outline-primary:focus {
+            color: #fff;
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .btn-secondary {
+            color: #fff;
+            background-color: var(--secondary);
+            border-color: var(--secondary);
+        }
+        
+        .btn-secondary:hover, .btn-secondary:focus {
+            background-color: var(--secondary-dark);
+            border-color: var(--secondary-dark);
+        }
+        
+        .btn-success {
+            color: #fff;
+            background-color: var(--success);
+            border-color: var(--success);
+        }
+        
+        .btn-success:hover, .btn-success:focus {
+            background-color: var(--success-dark);
+            border-color: var(--success-dark);
+        }
+        
+        .btn-danger {
+            color: #fff;
+            background-color: var(--danger);
+            border-color: var(--danger);
+        }
+        
+        .btn-danger:hover, .btn-danger:focus {
+            background-color: var(--danger-dark);
+            border-color: var(--danger-dark);
+        }
+        
+        .btn-warning {
+            color: #212529;
+            background-color: var(--warning);
+            border-color: var(--warning);
+        }
+        
+        .btn-warning:hover, .btn-warning:focus {
+            background-color: var(--warning-dark);
+            border-color: var(--warning-dark);
+        }
+        
+        .btn-info {
+            color: #fff;
+            background-color: var(--info);
+            border-color: var(--info);
+        }
+        
+        .btn-info:hover, .btn-info:focus {
+            background-color: var(--info-dark);
+            border-color: var(--info-dark);
+        }
+        
+        .btn-light {
+            color: #212529;
+            background-color: var(--light);
+            border-color: var(--light);
+        }
+        
+        .btn-light:hover, .btn-light:focus {
+            background-color: #e2e6ea;
+            border-color: #dae0e5;
+        }
+        
+        .btn-dark {
+            color: #fff;
+            background-color: var(--dark);
+            border-color: var(--dark);
+        }
+        
+        .btn-dark:hover, .btn-dark:focus {
+            background-color: #23272b;
+            border-color: #1d2124;
+        }
+        
+        .btn-group {
+            position: relative;
+            display: inline-flex;
+            vertical-align: middle;
+        }
+        
+        .btn-group > .btn {
+            position: relative;
+            flex: 1 1 auto;
+        }
+        
+        .btn-group > .btn:not(:first-child) {
+            margin-left: -1px;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+        
+        .btn-group > .btn:not(:last-child) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        
+        /* Fancy button with sheen effect */
+        .btn-fancy {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-fancy:after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            bottom: -50%;
+            left: -50%;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0));
+            transform: rotateZ(60deg) translate(-5em, 7.5em);
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        .btn-fancy:hover:after, .btn-fancy:focus:after {
+            opacity: 1;
+            transform: rotateZ(60deg) translate(1em, -20em);
+            transition: transform 0.7s ease-in-out, opacity 0.5s;
+        }
+        
+        /* Input and Form Styles */
+        .form-control, .form-select {
+            border-radius: var(--border-radius);
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            outline: 0;
+            box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25);
+            background-color: var(--input-focus-bg);
+        }
+        
+        .form-control::placeholder {
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+        
+        .form-text {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+        
+        .select2-container--bootstrap-5 .select2-selection {
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            height: calc(3rem + 2px);
+            padding: 0.5rem 1rem;
+        }
+        
+        .select2-container--bootstrap-5.select2-container--focus .select2-selection, 
+        .select2-container--bootstrap-5.select2-container--open .select2-selection {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.2rem rgba(0, 200, 5, 0.15);
+        }
+        
+        label {
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        /* Global Variables & Styles */
+        :root {
+            /* Modern color scheme with Robinhood-like aesthetics */
+            --primary-color: #00c805;         /* Robinhood green */
+            --primary-dark: #00a803;          /* Darker green for hover */
+            --primary-light: rgba(0, 200, 5, 0.15); /* Light green for highlights */
+            --secondary-color: #1e2124;       /* Dark accent color */
+            --text-color: #202023;            /* Primary text */
+            --text-light: #6c7583;            /* Secondary text */
+            --bg-color: #f9fafb;              /* Main background */
+            --card-bg: #ffffff;               /* Card background */
+            --border-color: #e5e7eb;          /* Border color */
+            --border-radius: 10px;            /* Rounded corners */
+            
+            /* Category colors */
+            --best-color: #00c805;            /* Best option */
+            --better-color: #1e88e5;          /* Better option */
+            --good-color: #ff9800;            /* Good option */
+            
+            /* Status colors */
+            --success-bg: rgba(0, 200, 5, 0.1);
+            --info-bg: rgba(30, 136, 229, 0.1);
+            --warning-bg: rgba(255, 152, 0, 0.1);
+            --danger-bg: rgba(239, 68, 68, 0.1);
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding-bottom: 2.5rem;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--secondary-color);
+        }
+        
+        /* Card styles */
+        .card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            word-wrap: break-word;
+            background-color: #fff;
+            background-clip: border-box;
+            border: none;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        
+        .card-header {
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 0;
+            background-color: rgba(0, 0, 0, 0.02);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .card-header:first-child {
+            border-radius: calc(var(--border-radius) - 1px) calc(var(--border-radius) - 1px) 0 0;
+        }
+        
+        .card-body {
+            flex: 1 1 auto;
+            padding: 1.5rem;
+        }
+        
+        .card-title {
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .card-subtitle {
+            margin-top: -0.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--secondary);
+        }
+        
+        .card-text {
+            color: var(--dark-muted);
+            margin-bottom: 1rem;
+        }
+        
+        .card-text:last-child {
+            margin-bottom: 0;
+        }
+        
+        .card-link {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        
+        .card-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+        
+        .card-footer {
+            padding: 1rem 1.5rem;
+            background-color: rgba(0, 0, 0, 0.02);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .card-footer:last-child {
+            border-radius: 0 0 calc(var(--border-radius) - 1px) calc(var(--border-radius) - 1px);
+        }
+        
+        /* Card variations */
+        .card-primary {
+            border-top: 4px solid var(--primary);
+        }
+        
+        .card-success {
+            border-top: 4px solid var(--success);
+        }
+        
+        .card-info {
+            border-top: 4px solid var(--info);
+        }
+        
+        .card-warning {
+            border-top: 4px solid var(--warning);
+        }
+        
+        .card-danger {
+            border-top: 4px solid var(--danger);
+        }
+        
+        /* Beautiful hover cards */
+        .hover-card {
+            position: relative;
+            border-radius: var(--border-radius);
+            background-color: #fff;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+            border: none;
+            height: 100%;
+        }
+        
+        .hover-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-5px);
+        }
+        
+        .hover-card-header {
+            font-weight: 600;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+        
+        .hover-card-body {
+            color: var(--dark-muted);
+        }
+        
+        .hover-card-icon {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            font-size: 1.5rem;
+            color: var(--primary);
+            opacity: 0.8;
+        }
+        
+        /* Button styles */
+        .btn {
+            font-weight: 500;
+            border-radius: 8px;
+            padding: 0.6rem 1.2rem;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+        
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-outline-primary:hover, .btn-outline-primary:focus {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* Form controls */
+        .form-control, .form-select {
+            border-radius: var(--border-radius);
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color);
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(0, 200, 5, 0.25);
+        }
+        
+        /* Navbar styling */
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 0.75rem 1rem;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+        }
+        
+        /* Badge styling */
+        .badge {
+            font-weight: 500;
+            padding: 0.35em 0.65em;
+            border-radius: 6px;
+        }
+        
+        /* Select2 customization */
+        .select2-container--bootstrap-5 .select2-selection {
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+        
+        .select2-container--bootstrap-5.select2-container--focus .select2-selection, 
+        .select2-container--bootstrap-5.select2-container--open .select2-selection {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(0, 200, 5, 0.25);
+        }
+        
+        /* Tabulator customization */
+        .tabulator {
+            border: none;
+            background-color: transparent;
+            font-family: var(--font-family);
+            margin: 1.5rem 0;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        
+        .tabulator-header {
+            border-bottom: 2px solid var(--border-color);
+            background-color: var(--card-bg);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        
+        .tabulator-col {
+            background-color: transparent;
+            border-right: none;
+            padding: 12px;
+        }
+        
+        .tabulator-col-title {
+            padding: 0;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .tabulator-arrow {
+            border-width: 5px;
+            opacity: 0.5;
+        }
+        
+        .tabulator-header .tabulator-col.tabulator-sortable:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        .tabulator-row {
+            border-bottom: 1px solid var(--border-light);
+            background-color: var(--card-bg);
+            transition: background-color 0.2s ease;
+        }
+        
+        .tabulator-row:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        .tabulator-row.tabulator-selected {
+            background-color: var(--select-bg);
+        }
+        
+        .tabulator-row.tabulator-selected:hover {
+            background-color: var(--select-hover-bg);
+        }
+        
+        .tabulator-cell {
+            border-right: none;
+            padding: 12px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+        
+        .tabulator-placeholder {
+            background-color: var(--card-bg);
+            color: var(--text-muted);
+            font-style: italic;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        /* Ticker and price styling in table */
+        .ticker-symbol {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        .change-positive {
+            color: var(--price-up);
+            font-weight: 500;
+        }
+        
+        .change-negative {
+            color: var(--price-down);
+            font-weight: 500;
+        }
+        
+        /* Table cell with company name */
+        .company-cell {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .company-name {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Empty table message */
+        .tabulator-placeholder {
+            padding: 2rem;
+        }
+        
+        .tabulator-placeholder span {
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+        
+        /* Top choices styling - Robinhood-like Modern UI */
+        .top-choices {
+            margin-top: 2rem;
+            margin-bottom: 3rem;
+            padding: 1.5rem 0;
+            position: relative;
+        }
+        
+        .top-choices h3 {
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .top-choices h3:after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 40px;
+            height: 4px;
+            background-color: var(--primary-color);
+            border-radius: 2px;
+        }
+        
+        /* New Top Choice Card Design */
+        .top-choice-card {
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            background-color: var(--card-bg);
+            height: 100%;
+            animation: fadeInUp 0.5s ease-out both;
+            animation-fill-mode: backwards;
+            position: relative;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translate3d(0, 20px, 0);
+            }
+            to {
+                opacity: 1;
+                transform: translate3d(0, 0, 0);
+            }
+        }
+        
+        .top-choice-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            z-index: 10;
+        }
+        
+        .top-choice-card .card-header {
+            padding: 1.25rem 1.25rem 0.75rem;
+            border-bottom: none;
+            background-color: transparent;
+        }
+        
+        .top-choice-card .card-body {
+            padding: 0.5rem 1.25rem 1.5rem;
+            position: relative;
+        }
+        
+        .top-choice-card .rank-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            padding: 0.25rem 0.75rem;
+            border-radius: 30px;
+            background-color: var(--secondary-bg);
+            color: var(--secondary-color);
+        }
+        
+        .top-choice-card .category-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            padding: 0.25rem 0.75rem;
+            border-radius: 30px;
+        }
+        
+        .top-choice-card .ticker-symbol {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .top-choice-card .strike-price {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.25rem;
+            font-weight: 500;
+        }
+        
+        .top-choice-card .metrics {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+        
+        .top-choice-card .metric-item {
+            flex: 1 0 50%;
+            margin-bottom: 0.75rem;
+        }
+        
+        .top-choice-card .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .top-choice-card .metric-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .top-choice-card .score-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 0.5rem;
+        }
+        
+        .top-choice-card .csp-score {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .top-choice-card.best {
+            border-left: none;
+            background: linear-gradient(to bottom right, var(--card-bg), rgba(0, 200, 5, 0.03));
+        }
+        
+        .top-choice-card.best:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background-color: var(--primary-color);
+            border-radius: 4px 0 0 4px;
+        }
+        
+        .top-choice-card.best .category-tag {
+            background-color: rgba(0, 200, 5, 0.15);
+            color: var(--primary-color);
+        }
+        
+        .top-choice-card.better {
+            border-left: none;
+            background: linear-gradient(to bottom right, var(--card-bg), rgba(59, 130, 246, 0.03));
+        }
+        
+        .top-choice-card.better:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background-color: #3b82f6;
+            border-radius: 4px 0 0 4px;
+        }
+        
+        .top-choice-card.better .category-tag {
+            background-color: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+        }
+        
+        .top-choice-card.good {
+            border-left: none;
+            background: linear-gradient(to bottom right, var(--card-bg), rgba(245, 158, 11, 0.03));
+        }
+        
+        .top-choice-card.good:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background-color: #f59e0b;
+            border-radius: 4px 0 0 4px;
+        }
+        
+        .top-choice-card.good .category-tag {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+        }
+        
+        /* Favorites styling */
+        .favorite-star {
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .favorite-star:hover {
+            transform: scale(1.2);
+        }
+        
+        .favorite-star.text-warning {
+            color: #f59e0b !important;
+        }
+
+        .form-floating > .form-control:focus ~ label,
+        .form-floating > .form-control:not(:placeholder-shown) ~ label {
+            opacity: 0.65;
+            transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+        }
+
+        /* Custom checkboxes and radios */
+        .form-check {
+            display: block;
+            min-height: 1.5rem;
+            padding-left: 1.5em;
+            margin-bottom: 0.125rem;
+        }
+
+        .form-check-input {
+            width: 1em;
+            height: 1em;
+            margin-top: 0.25em;
+            vertical-align: top;
+            background-color: #fff;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            border: 1px solid var(--border-color);
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+            transition: background-color 0.15s ease-in-out, background-position 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .form-check-input[type="checkbox"] {
+            border-radius: 0.25em;
+        }
+
+        .form-check-input[type="radio"] {
+            border-radius: 50%;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .form-check-input:checked[type="checkbox"] {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+        }
+
+        .form-check-input:checked[type="radio"] {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23fff'/%3e%3c/svg%3e");
+        }
+
+        .form-check-label {
+            color: var(--dark);
+            cursor: pointer;
+        }
+
+        /* Floating Action Button Styles */
+        .btn-float {
+            position: fixed;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            text-align: center;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: none;
+        }
+
+        .btn-float:hover {
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+            transform: translateY(-3px);
+        }
+
+        .btn-float:active {
+            transform: translateY(0);
+        }
+
+        .btn-float-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-float-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .btn-float-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-float-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-float-bottom-right {
+            right: 24px;
+            bottom: 24px;
+        }
+
+        .btn-float-bottom-left {
+            left: 24px;
+            bottom: 24px;
+        }
+
+        .btn-float-top-right {
+            right: 24px;
+            top: 24px;
+        }
+
+        .btn-float-top-left {
+            left: 24px;
+            top: 24px;
+        }
+
+        .btn-float i,
+        .btn-float svg {
+            font-size: 24px;
+            margin: 0;
+        }
+
+        .btn-float-sm {
+            width: 40px;
+            height: 40px;
+        }
+
+        .btn-float-lg {
+            width: 72px;
+            height: 72px;
+        }
+
+        .btn-float-lg i,
+        .btn-float-lg svg {
+            font-size: 32px;
+        }
+
+        /* Speed dial (multiple floating action buttons) */
+        .speed-dial {
+            position: fixed;
+            z-index: 999;
+        }
+
+        .speed-dial-buttons {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .speed-dial:hover .speed-dial-buttons {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .speed-dial-bottom-right {
+            right: 24px;
+            bottom: 24px;
+        }
+
+        .speed-dial-bottom-right .speed-dial-buttons {
+            bottom: 70px;
+            right: 8px;
+        }
+
+        .speed-dial-bottom-left {
+            left: 24px;
+            bottom: 24px;
+        }
+
+        .speed-dial-bottom-left .speed-dial-buttons {
+            bottom: 70px;
+            left: 8px;
+        }
+
+        .speed-dial-top-right {
+            right: 24px;
+            top: 24px;
+        }
+
+        .speed-dial-top-right .speed-dial-buttons {
+            top: 70px;
+            right: 8px;
+        }
+
+        .speed-dial-top-left {
+            left: 24px;
+            top: 24px;
+        }
+
+        .speed-dial-top-left .speed-dial-buttons {
+            top: 70px;
+            left: 8px;
+        }
+
+        .speed-dial-button {
+            margin: 8px 0;
+            transition: transform 0.3s;
+        }
+
+        .speed-dial:hover .speed-dial-button {
+            transform: scale(1);
+        }
+
+        .speed-dial .speed-dial-button {
+            transform: scale(0);
+        }
+
+        .speed-dial-tooltip {
+            position: absolute;
+            background-color: rgba(97, 97, 97, 0.9);
+            color: white;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .speed-dial-bottom-right .speed-dial-tooltip {
+            right: 64px;
+        }
+
+        .speed-dial-bottom-left .speed-dial-tooltip {
+            left: 64px;
+        }
+
+        .speed-dial-top-right .speed-dial-tooltip {
+            right: 64px;
+        }
+
+        .speed-dial-top-left .speed-dial-tooltip {
+            left: 64px;
+        }
+
+        /* Metric date styling */
+        .top-choice-card .metric-date {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: -5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between">
+            <h2>Cash-Secured Puts (CSP) Analysis</h2>
+            <div>
+                <!-- This div remains empty but we keep it for layout -->
+                <!-- NOTE: The top "Refresh Data" button was removed to avoid duplication, 
+                     simplifying the UI and directing users to use the main button in the control panel -->
+            </div>
+        </div>
+        
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="btn-group">
+                <button class="btn btn-primary" id="refresh">
+                    <span id="loadingSpinner" class="spinner-border spinner-border-sm me-2" role="status" style="display: none;"></span>
+                    <i class="fas fa-sync-alt"></i> Refresh Data
+                </button>
+                <button class="btn btn-outline-warning" id="favoritesBtn">
+                    <i class="fas fa-star"></i> Favorites <span id="favoritesCount" class="badge bg-warning text-dark">0</span>
+                </button>
+                <button class="btn btn-outline-danger" id="clearFavorites"><i class="fas fa-trash"></i> Clear</button>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="stockSelect" class="form-label">Select Stocks</label>
+                    <div class="favorites-toolbar">
+                        <button id="loadFavoritesBtn" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-star"></i> Load Favorites
+                        </button>
+            </div>
+                    <select id="stockSelect" class="form-select" multiple="multiple">
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="timeframeSelect" class="form-label">Timeframe</label>
+                    <select id="timeframeSelect" class="form-select">
+                        <option value="7">1 Week</option>
+                        <option value="14" selected>2 Weeks</option>
+                        <option value="30">1 Month</option>
+                        <option value="60">2 Months</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="minOtmProb" class="form-label">Min OTM Probability (%)</label>
+                    <!-- Default probability threshold set to 75% for moderate risk tolerance -->
+                    <input type="number" class="form-control" id="minOtmProb" value="75" min="0" max="100">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label for="maxBudget" class="form-label">Max Cash Required ($)</label>
+                    <input type="number" class="form-control" id="maxBudget" value="10000" min="0">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recommendations Panel with relocated Independent AI button -->
+        <div class="recommendations-panel">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3>CSP Strategy Recommendations</h3>
+                <!-- NOTE: The Independent AI button was moved here from the top header
+                     to associate it more clearly with the recommendations section where its results are shown -->
+                <button id="askIndependentAIButton" class="btn btn-danger mb-3" disabled>
+                    <i class="fas fa-brain me-2"></i> Independent AI
+                </button>
+            </div>
+            <!-- Top Choices Section -->
+            <div class="container mt-4 top-choices">
+                <div class="row mb-3">
+                    <div class="col">
+                        <h3 class="mb-3">Top Choices</h3>
+                    </div>
+                </div>
+                <div class="row" id="topChoicesContainer">
+                    <!-- Cards will be inserted here via JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Summary Section - Removed to streamline UI -->
+        </div>
+        
+        <!-- Guide Panel - Made collapsible -->
+        <div class="guide-panel" id="guideAccordion">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3>Cash-Secured Puts (CSP) Analysis Guide</h3>
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#guideContent" aria-expanded="false" aria-controls="guideContent">
+                    <i class="fas fa-chevron-down"></i> Show/Hide Guide
+                </button>
+            </div>
+            
+            <div class="collapse" id="guideContent">
+                <p class="mt-3">A cash-secured put is an options strategy where you sell a put option and set aside enough cash to buy the stock if it's assigned to you. You collect a premium upfront, and your goal is for the option to expire worthless so you keep the entire premium.</p>
+                
+                <div class="explanation-section">
+                    <h4>Column Explanations</h4>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h5>Stock Information</h5>
+                            <div class="column-explanation">
+                                <strong>Stock:</strong> Ticker symbol of the company<br>
+                                <strong>Company:</strong> Full company name<br>
+                                <strong>Current:</strong> Current stock price<br>
+                                <strong>Strike:</strong> Price at which you'd buy the stock if assigned
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <h5>Position Metrics</h5>
+                            <div class="column-explanation">
+                                <strong>% Below:</strong> How far below current price the strike is (higher = safer)<br>
+                                <strong>OTM Prob:</strong> Probability the option will expire worthless (higher = safer)<br>
+                                <strong>IV:</strong> Implied volatility (higher = more premium but more risk)<br>
+                                <strong>RSI:</strong> Relative Strength Index (under 30 = oversold, over 70 = overbought)<br>
+                                <strong>Fear/Greed (F/G):</strong> Market sentiment indicator (below 30 = extreme fear, above 70 = extreme greed)
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <h5>Time & Returns</h5>
+                            <div class="column-explanation">
+                                <strong>Expiry:</strong> When the option contract expires<br>
+                                <strong>Days:</strong> Number of days until expiration<br>
+                                <strong>Premium:</strong> Cash you receive for selling the put contract ($)<br>
+                                <strong>$/Day:</strong> Daily income in dollars per contract (Premium ÷ Days)
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <h5>Advanced Metrics</h5>
+                            <div class="column-explanation">
+                                <strong>Return %:</strong> (Premium ÷ Strike) × 100 = return if option expires worthless<br>
+                                <strong>OTM Prob:</strong> Probability the option will expire worthless<br>
+                                <strong>IV:</strong> Implied volatility (higher = more premium but more risk)<br>
+                                <strong>RSI:</strong> Relative Strength Index (under 30 = potentially oversold, over 70 = potentially overbought)<br>
+                                <strong>Max 1D Move:</strong> Maximum single-day (24hr) price movement as a percentage in the last 30 days<br>
+                                <strong>Max 5D Move:</strong> Maximum 5-day (weekly) price movement as a percentage in the last 30 days<br>
+                                <strong>CSP Score:</strong> Weighted score (0-10) combining IV/HV ratio, RSI, premium quality, OTM probability, and technical support
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+                <div class="explanation-section">
+                    <h4>CSP Opportunity Categories</h4>
+                    <p>The tool categorizes CSP opportunities into three tiers using a hybrid approach that combines premium per day with support quality:</p>
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Category</th>
+                                <th>OTM Probability</th>
+                                <th>Premium/Day</th>
+                                <th>Support Quality</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="table-success">
+                                <td><strong>Best</strong></td>
+                                <td>≥ 85%</td>
+                                <td>≥ $0.20/day</td>
+                                <td>Excellent</td>
+                            </tr>
+                            <tr class="table-primary">
+                                <td><strong>Better</strong></td>
+                                <td>≥ 85%</td>
+                                <td>≥ $0.15/day</td>
+                                <td>Good or Excellent</td>
+                            </tr>
+                            <tr class="table-warning">
+                                <td><strong>Good</strong></td>
+                                <td>≥ 85%</td>
+                                <td>≥ $0.10/day</td>
+                                <td>Any</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h5>Support Quality Levels</h5>
+                    <ul>
+                        <li><strong>Excellent:</strong> Strike price is 10% or more below the 50-day moving average (MA50)</li>
+                        <li><strong>Good:</strong> Strike price is 5-10% below MA50</li>
+                        <li><strong>Moderate:</strong> Strike price is 0-5% below MA50</li>
+                        <li><strong>Weak:</strong> Strike price is above MA50</li>
+                    </ul>
+                    <p class="alert alert-info">
+                        This hybrid approach prioritizes both absolute returns (premium per day) and risk management (technical support levels),
+                        ensuring that the best opportunities have solid technical support along with attractive premiums.
+                    </p>
+                </div>
+                
+                <div class="explanation-section">
+                    <h4>CSP Score Calculation</h4>
+                    <p>The CSP Quality Score (0-10) is calculated using a weighted formula with the following components:</p>
+                    <ul>
+                        <li><strong>IV/HV Ratio (30%):</strong> Compares option pricing to historical volatility. Lower values (options priced below historical volatility) receive higher scores.</li>
+                        <li><strong>RSI (25%):</strong> Evaluates technical condition of the stock. Oversold conditions (RSI below 30) receive maximum scores.</li>
+                        <li><strong>Premium Quality (25%):</strong> Rates annualized return on capital. Higher annualized returns receive better scores.</li>
+                        <li><strong>OTM Probability (10%):</strong> Measures statistical likelihood of option expiring worthless. Higher probabilities (>90%) get higher scores.</li>
+                        <li><strong>Technical Support (10%):</strong> Assesses if strike price aligns with technical support levels. Strikes 5-10% below 50-day moving average receive highest scores.</li>
+                    </ul>
+                    <p>Each component is scored from 0-10, then weighted and combined for the final score:</p>
+                    <div class="alert alert-secondary">
+                        <code>CSP Score = (IV/HV Score × 0.3) + (RSI Score × 0.25) + (Premium Score × 0.25) + (OTM Probability Score × 0.1) + (Support Score × 0.1)</code>
+                    </div>
+                </div>
+                
+                <div class="explanation-section">
+                    <h4>Historical Price Movement Metrics</h4>
+                    <p>Understanding a stock's historical price movement is crucial for CSP strategies:</p>
+                    <ul>
+                        <li><strong>Max 1-Day Movement (Max 1D Move):</strong> Shows the largest single-day price swing (High to Low) in the past 30 days. High values indicate significant intraday volatility that could lead to greater risk of assignment or larger position swings.</li>
+                        <li><strong>Max 5-Day Movement (Max 5D Move):</strong> Shows the largest price range over any 5-day (weekly) period in the past 30 days. This metric helps identify stocks with high short-term volatility that may exceed your risk tolerance.</li>
+                    </ul>
+                    <p>When selling Cash-Secured Puts, consider these metrics to assess actual price behavior beyond what implied volatility suggests:</p>
+                    <ul>
+                        <li>Stocks with <strong>lower</strong> Max 1D and Max 5D values generally provide more reliable, predictable CSP opportunities</li>
+                        <li>Stocks with <strong>higher</strong> values may offer higher premiums but come with increased risk of significant price swings</li>
+                    </ul>
+                    <p class="alert alert-warning">An ideal CSP candidate would have high premiums (good IV) but relatively contained actual price movements (modest Max 1D and Max 5D values).</p>
+                </div>
+                
+                <div class="explanation-section">
+                    <h4>Tips for Success</h4>
+                    <ol>
+                        <li>Sell CSPs on stocks you wouldn't mind owning at the strike price</li>
+                        <li>Look for strikes below support levels</li>
+                        <li>Consider stocks with upward or sideways momentum</li>
+                        <li>Monitor positions regularly, especially if the stock approaches your strike price</li>
+                        <li>Don't commit all available capital - keep some in reserve for adjustments</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Panel -->
+        <div class="results-panel">
+            <h3>CSP Opportunities</h3>
+            <div id="resultsTable"></div>
+        </div>
+    </div>
+
+    <!-- Create a modal for favorites management -->
+    <div class="modal fade" id="favoritesModal" tabindex="-1" aria-labelledby="favoritesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="favoritesModalLabel">Manage Favorites</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="noFavoritesMessage" class="text-center text-muted" style="display: none;">
+                        No favorites saved. Click the star icon next to stocks to save them as favorites.
+                    </p>
+                    <div id="favoritesList" class="list-group">
+                        <!-- Favorites will be populated here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary" id="loadAllFavoritesBtn">Load All Favorites</button>
+                    <button type="button" class="btn btn-outline-danger" id="clearAllFavoritesBtn">Clear All</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-danger text-white">
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="errorToastBody">
+                Error message here
+            </div>
+        </div>
+    </div>
+    
+    <!-- AI Recommendation Modal -->
+    <div class="modal fade" id="aiRecommendationModal" tabindex="-1" aria-labelledby="aiRecommendationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white" id="aiModalHeader">
+                    <h5 class="modal-title" id="aiRecommendationModalLabel">AI Recommendation</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Loading spinner -->
+                    <div id="aiLoadingSpinner" class="text-center my-5">
+                        <div class="spinner-border text-success" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Analyzing market data and generating recommendation...</p>
+                    </div>
+                    
+                    <!-- Error message -->
+                    <div id="aiErrorMessage" class="alert alert-danger d-none">
+                        Error loading recommendation
+                    </div>
+                    
+                    <!-- Recommendation content -->
+                    <div id="aiRecommendationContent" class="d-none">
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="display-4 me-3 text-success" id="aiTickerSymbol">TICKER</div>
+                            <div>
+                                <h4 id="aiCompanyName">Company Name</h4>
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <span class="badge bg-secondary">Strike: $<span id="aiStrikePrice">00.00</span></span>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-info">Exp: <span id="aiExpirationDate">MM/DD/YYYY</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <strong>Strategy Reasoning</strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul id="aiReasoningList">
+                                            <!-- Reasoning bullets will be inserted here -->
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <strong>Key Metrics</strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Current Price:</span>
+                                            <strong id="aiCurrentPrice">$00.00</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Premium/Day:</span>
+                                            <strong id="aiPremiumPerDay">$0.00</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>OTM Probability:</span>
+                                            <strong id="aiOtmProbability">00%</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>CSP Quality Score:</span>
+                                            <strong id="aiCspScore">0.0</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Category:</span>
+                                            <strong id="aiCategory">Category</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <strong>Market Assessment</strong>
+                            </div>
+                            <div class="card-body">
+                                <p id="aiMarketAssessment">Market assessment will appear here</p>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="mb-2">Confidence Score</div>
+                            <div class="d-flex justify-content-center align-items-center">
+                                <div id="aiConfidenceScore" class="d-flex">
+                                    <!-- Stars will be inserted here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="riskTolerance" id="conservativeRisk" value="conservative">
+                        <label class="form-check-label" for="conservativeRisk">Conservative</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="riskTolerance" id="moderateRisk" value="moderate" checked>
+                        <label class="form-check-label" for="moderateRisk">Moderate</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="riskTolerance" id="aggressiveRisk" value="aggressive">
+                        <label class="form-check-label" for="aggressiveRisk">Aggressive</label>
+                    </div>
+                    <button type="button" class="btn btn-success" id="regenerateAiButton">
+                        <i class="fas fa-redo me-2"></i>Regenerate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template for Top Choices Card -->
+    <template id="topChoiceTemplate">
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 top-choice-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 ticker-symbol">$TICKER</h5>
+                    <div>
+                        <span class="favorite-star me-2">
+                            <i class="far fa-star"></i>
+                        </span>
+                        <span class="badge rounded-pill bg-primary">Category</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-0">CSP Strategy</h6>
+                            <p class="mb-0 text-secondary strike-exp">$STRIKE exp. $DATE</p>
+                        </div>
+                        <div class="text-end">
+                            <div class="cspscore-pill">
+                                <span class="badge bg-success">Score: 8.5</span>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="my-3">
+                    <div class="metrics-container">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="metric-item">
+                                    <small class="text-secondary">Premium</small>
+                                    <div class="metric-value premium-value">$150</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="metric-item">
+                                    <small class="text-secondary">Daily Yield</small>
+                                    <div class="metric-value daily-yield">$5.25/day</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="metric-item">
+                                    <small class="text-secondary">OTM Prob.</small>
+                                    <div class="metric-value otm-prob">85%</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="metric-item">
+                                    <small class="text-secondary">Budget</small>
+                                    <div class="metric-value budget">$2,500</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="my-3">
+                    <h6 class="mb-2">AI Assessment</h6>
+                    <ul class="recommendation-points ps-3">
+                        <li>Point 1</li>
+                        <li>Point 2</li>
+                        <li>Point 3</li>
+                    </ul>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <button class="btn btn-primary w-100 see-details-btn">
+                        <i class="fas fa-info-circle me-1"></i> See Details
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@5.5.0/dist/js/tabulator.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <script>
+        // Global variables
+        let stocks = [];
+        let optionsData = [];
+        let tickers = {};
+        let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+        let currentStocks = [];
+        let dataTable;
+        let refreshInProgress = false;
+        
+        // Initialize favorites count
+        updateFavoritesCount();
+        
+        // AI Recommendation JavaScript
+        $(document).ready(function() {
+            // Initialize the Independent AI button and modal functionality
+            const askIndependentAIButton = $('#askIndependentAIButton');
+            const aiModal = new bootstrap.Modal(document.getElementById('aiRecommendationModal'));
+            const regenerateButton = $('#regenerateAiButton');
+            let currentRecommendationType = 'independent'; // Default to independent mode
+            // NOTE: We've simplified the AI recommendation system to use only the independent AI
+            // This provides more objective analysis not tied to internal scoring systems
+            
+            // Enable the AI button after data is loaded
+            $(document).on('dataLoaded', function() {
+                askIndependentAIButton.prop('disabled', false);
+            });
+            
+            // Handle Independent AI button click
+            askIndependentAIButton.on('click', function() {
+                // Update modal header
+                $('#aiModalHeader').removeClass('bg-success').addClass('bg-danger');
+                $('#aiRecommendationModalLabel').text('Independent AI Recommendation');
+                currentRecommendationType = 'independent';
+                
+                // Show the modal
+                aiModal.show();
+                
+                // Reset the modal content
+                $('#aiLoadingSpinner').removeClass('d-none');
+                $('#aiErrorMessage').addClass('d-none');
+                $('#aiRecommendationContent').addClass('d-none');
+                
+                // Get selected risk tolerance
+                const riskTolerance = $('input[name="riskTolerance"]:checked').val();
+                
+                // Make the API request
+                fetchAIRecommendation(riskTolerance, '/api/independent-ai-recommendation');
+            });
+            
+            // Handle regenerate button click
+            regenerateButton.on('click', function() {
+                // Reset the modal content
+                $('#aiLoadingSpinner').removeClass('d-none');
+                $('#aiErrorMessage').addClass('d-none');
+                $('#aiRecommendationContent').addClass('d-none');
+                
+                // Get selected risk tolerance
+                const riskTolerance = $('input[name="riskTolerance"]:checked').val();
+                
+                // Always use the independent AI endpoint since that's the only one available now
+                // NOTE: Streamlined to use only the independent AI endpoint for all recommendations
+                // This provides consistency in the recommendation approach
+                fetchAIRecommendation(riskTolerance, '/api/independent-ai-recommendation');
+            });
+            
+            // Function to fetch AI recommendation
+            function fetchAIRecommendation(riskTolerance, endpoint) {
+                console.log(`Fetching AI recommendation from ${endpoint} with stocks data:`, window.optionsData ? `${window.optionsData.length} stocks` : "No data");
+                
+                // Check if we have stock data first
+                if (!window.optionsData || window.optionsData.length === 0) {
+                    showAIError("No stock data available. Please refresh data first.");
+                    return;
+                }
+                
+                // Show loading state
+                $('#aiRecommendationContent').removeClass('d-none');
+                $('#aiLoadingSpinner').removeClass('d-none');
+                
+                // Transform the data structure to what the backend expects
+                // Backend expects an array of stock objects, each with an 'options' array
+                const stocksMap = {};
+                
+                // Group options by ticker
+                window.optionsData.forEach(option => {
+                    const ticker = option.ticker;
+                    if (!stocksMap[ticker]) {
+                        // Create a new stock entry
+                        stocksMap[ticker] = {
+                            ticker: ticker,
+                            company: option.company,
+                            current_price: option.current_price,
+                            rsi: option.rsi,
+                            ma50: option.ma50,
+                            ma200: option.ma200,
+                            category: option.category,
+                            csp_quality_score: option.csp_quality_score,
+                            max_daily_move: option.max_daily_move,
+                            max_daily_move_date: option.max_daily_move_date,
+                            max_weekly_move: option.max_weekly_move,
+                            options: []
+                        };
+                    }
+                    
+                    // Add this option to the stock's options array
+                    stocksMap[ticker].options.push({
+                        strike: option.strike,
+                        premium: option.premium,
+                        premium_per_day: option.premium_per_day,
+                        otm_probability: option.otm_probability,
+                        expiry: option.expiry,
+                        days_to_expiry: option.days_to_expiry,
+                        percent_below: option.percent_below
+                    });
+                });
+                
+                // Convert the map to an array
+                const transformedStocksData = Object.values(stocksMap);
+                
+                console.log(`Transformed ${window.optionsData.length} options into ${transformedStocksData.length} stocks with options arrays`);
+                
+                // Prepare the request
+                const requestData = {
+                    stocks_data: transformedStocksData,
+                    risk_tolerance: riskTolerance
+                };
+                
+                console.log(`Sending AI request to ${endpoint} with risk tolerance: ${riskTolerance}`);
+                
+                // Call the API
+                fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`Server error: ${response.status} - ${text}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("AI recommendation response:", data);
+                    
+                    // Check if we have a recommendation
+                    if (data.recommendation) {
+                        let warningMsg = '';
+                        let indepBadge = '';
+                        
+                        // Check if we have a warning (fallback recommendation)
+                        if (data.warning) {
+                            warningMsg = `<div class="alert alert-warning mt-2">
+                                <strong>Note:</strong> ${data.warning}
+                            </div>`;
+                        }
+                        
+                        // Add a badge for independent recommendations
+                        if (data.recommendation.is_independent) {
+                            indepBadge = `<span class="badge bg-danger ms-2">Independent AI Analysis</span>`;
+                        }
+                        
+                        const recommendation = data.recommendation;
+                        const ticker = recommendation.ticker;
+                        const reasoning = Array.isArray(recommendation.reasoning) 
+                            ? recommendation.reasoning.map(r => `<li>${r}</li>`).join('') 
+                            : `<li>${recommendation.reasoning}</li>`;
+                        
+                        // Format the recommendation
+                        const html = `
+                            <div class="card border-primary mb-3">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">Recommended Trade: ${ticker} CSP ${indepBadge}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p class="lead">Sell Cash-Secured Put:</p>
+                                            <ul class="list-group mb-3">
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>Stock:</span>
+                                                    <strong>${ticker} (${recommendation.recommended_stock?.company || 'Unknown'})</strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>Strike Price:</span>
+                                                    <strong>$${recommendation.strike_price}</strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>Expiration:</span>
+                                                    <strong>${recommendation.expiration_date}</strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>OTM Probability:</span>
+                                                    <strong>${recommendation.otm_probability || 'N/A'}</strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>Premium:</span>
+                                                    <strong>$${recommendation.premium_amount || 'N/A'}</strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>$/Day:</span>
+                                                    <strong>$${recommendation.daily_premium_yield || 'N/A'}</strong>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between">
+                                                    <span>Confidence:</span>
+                                                    <strong>${recommendation.confidence}/5</strong>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="lead">Analysis:</p>
+                                            <ul class="mb-3">
+                                                ${reasoning}
+                                            </ul>
+                                            <div class="alert alert-info">
+                                                <strong>Market Assessment:</strong> ${recommendation.market_sentiment}
+                                            </div>
+                                            ${recommendation.note ? `<div class="alert alert-secondary"><small>${recommendation.note}</small></div>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            ${warningMsg}
+                        `;
+                        
+                        $('#aiLoadingSpinner').addClass('d-none');
+                        document.getElementById('aiRecommendationContent').innerHTML = html;
+                    } else if (data.error) {
+                        showAIError(data.error);
+                    } else {
+                        showAIError("Unknown error occurred when processing recommendation");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching AI recommendation:", error);
+                    showAIError(`Error: ${error.message}`);
+                });
+            }
+            
+            function showAIError(message) {
+                $('#aiLoadingSpinner').addClass('d-none');
+                document.getElementById('aiRecommendationContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5>Error Getting Recommendation</h5>
+                        <p>${message}</p>
+                        <p class="mb-0 mt-3">Please try again later or contact support if the issue persists.</p>
+                    </div>
+                `;
+            }
+        });
+        
+        // Initial setup when document is ready
+        $(document).ready(function() {
+            console.log('Document ready');
+            
+            // Debug refresh functionality
+            console.log('Refresh button:', $('#refresh').length ? 'Found' : 'Not found');
+            
+            // Initialize Select2 for stock selection
+            $('#stockSelect').select2({
+                placeholder: 'Select stocks...',
+                allowClear: true,
+                templateResult: formatStockOption,
+                templateSelection: formatStockSelection
+            });
+            
+            // Custom formatting for dropdown options
+            function formatStockOption(stock) {
+                if (!stock.id) return stock.text;
+                
+                try {
+                    const stockData = JSON.parse(stock.id);
+                    const isFavorite = favorites.some(f => f.ticker === stockData.ticker);
+                    
+                    const $option = $(
+                        `<div class="select2-option-wrapper">
+                            <i class="fa${isFavorite ? 's' : 'r'} fa-star favorite-star-dropdown" 
+                               style="color: ${isFavorite ? '#ffc107' : '#ccc'}; cursor: pointer; margin-right: 8px;"
+                               data-ticker="${stockData.ticker}" 
+                               data-name="${stockData.name}"></i>
+                            <span>${stock.text}</span>
+                        </div>`
+                    );
+                    
+                    // Add direct event handler to the star
+                    $option.find('.favorite-star-dropdown').on('mousedown', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const ticker = $(this).data('ticker');
+                        const name = $(this).data('name');
+                        
+                        console.log('Star clicked directly in dropdown for:', ticker);
+                        
+                        // Toggle favorite
+                        toggleFavorite(ticker, name);
+                        
+                        // Update appearance immediately
+                        const isNowFavorite = favorites.some(f => f.ticker === ticker);
+                        $(this).toggleClass('fas', isNowFavorite).toggleClass('far', !isNowFavorite);
+                        $(this).css('color', isNowFavorite ? '#ffc107' : '#ccc');
+                        
+                        // Prevent closing of the dropdown
+                        return false;
+                    });
+                    
+                    return $option;
+                } catch (e) {
+                    console.error("Error formatting stock option:", e);
+                    return stock.text;
+                }
+            }
+            
+            // Custom formatting for selected options
+            function formatStockSelection(stock) {
+                if (!stock.id) return stock.text;
+                return stock.text;
+            }
+            
+            // Initialize Tabulator
+            initTable();
+            
+            // Load available stocks
+            loadStocks();
+            
+            // Setup event handlers
+            setupEventHandlers();
+        });
+        
+        // LocalStorage functions for favorites
+        function saveFavorites() {
+            try {
+                localStorage.setItem('favorites', JSON.stringify(favorites));
+                updateFavoritesCount();
+                console.log("Saved favorites:", favorites);
+            } catch (e) {
+                console.error("Error saving favorites:", e);
+            }
+        }
+        
+        function loadFavorites() {
+            try {
+                const saved = localStorage.getItem('favorites');
+                if (saved) {
+                    favorites = JSON.parse(saved);
+                    console.log("Loaded favorites:", favorites);
+                } else {
+                    console.log("No saved favorites found");
+                    favorites = [];
+                }
+                updateFavoritesCount();
+            } catch (e) {
+                console.error("Error loading favorites:", e);
+                favorites = [];
+            }
+        }
+        
+        // Toggle favorite status
+        function toggleFavorite(ticker, name) {
+            if (!ticker) {
+                console.error("No ticker provided to toggleFavorite");
+                return;
+            }
+
+            console.log("toggleFavorite called for:", ticker, name);
+            
+            // Find if ticker already exists in favorites
+            const index = favorites.findIndex(f => f.ticker === ticker);
+            const wasAlreadyFavorite = index >= 0;
+            
+            if (wasAlreadyFavorite) {
+                // Remove from favorites
+                favorites.splice(index, 1);
+                console.log(`Removed ${ticker} from favorites. New favorites:`, favorites);
+            } else {
+                // Add to favorites
+                favorites.push({
+                    ticker: ticker,
+                    name: name || "Unknown"
+                });
+                console.log(`Added ${ticker} to favorites. New favorites:`, favorites);
+            }
+            
+            // Save to localStorage
+            saveFavorites();
+            
+            // Update all UI elements that show favorites status
+            synchronizeFavorites();
+        }
+        
+        // Synchronize favorites across all UI elements
+        function synchronizeFavorites() {
+            // Update table stars
+            if (table) {
+                table.redraw(true);
+            }
+            
+            // Update stars in dropdown
+            updateDropdownStars();
+            
+            // Update favorite count badge
+            updateFavoritesCount();
+        }
+        
+        // Update stars in dropdown
+        function updateDropdownStars() {
+            // When dropdown is open, update stars
+            $('.favorite-star-dropdown').each(function() {
+                const ticker = $(this).data('ticker');
+                const isFavorite = favorites.some(f => f.ticker === ticker);
+                
+                // Update class and color
+                $(this)
+                    .toggleClass('fas', isFavorite)
+                    .toggleClass('far', !isFavorite)
+                    .css('color', isFavorite ? '#ffc107' : '#ccc');
+            });
+        }
+        
+        // Update all UI elements that display favorites
+        function updateFavoritesUI(ticker, isFavorite) {
+            // Update stars in the table
+            $(`.tabulator-cell .favorite-star[data-ticker="${ticker}"]`)
+                .toggleClass('text-warning', isFavorite)
+                .toggleClass('text-light', !isFavorite);
+                
+            // Find all dropdown stars for this ticker
+            $(`.favorite-star-dropdown[data-ticker="${ticker}"]`).each(function() {
+                // Update class (fas = solid star, far = outline star)
+                $(this)
+                    .toggleClass('fas', isFavorite)
+                    .toggleClass('far', !isFavorite)
+                    .css('color', isFavorite ? '#ffc107' : '#ccc');
+            });
+            
+            // Update the favorites count badge
+            updateFavoritesCount();
+        }
+        
+        // Load available stocks
+        function loadStocks() {
+            console.log('loadStocks function called');
+            $.get('/api/stocks', function(response) {
+                console.log('Received response from /api/stocks:', response);
+                const stocks = response.stocks;
+                if (stocks && stocks.length > 0) {
+                    console.log(`Found ${stocks.length} stocks to load`);
+                    stocks.forEach(stock => {
+                        $('#stockSelect').append(new Option(
+                            `${stock.ticker} - ${stock.name}`,
+                            JSON.stringify(stock)
+                        ));
+                    });
+                    console.log('Finished loading stocks into select box');
+                } else {
+                    console.error('No stocks found in the response or empty stocks array');
+                }
+            }).fail(function(error) {
+                console.error('Error loading stocks:', error);
+            });
+        }
+        
+        // Initialize table
+        function initTable() {
+            table = new Tabulator("#resultsTable", {
+                data: [],
+                layout: "fitColumns",
+                pagination: false,
+                height: "70vh",
+                columns: [
+                    // IDENTIFICATION & STOCK INFO GROUP
+                    {title: "", field: "favorite", formatter: function(cell) {
+                        const ticker = cell.getData().ticker;
+                        const isFavorite = favorites.some(f => f.ticker === ticker);
+                        return `<i class="fa${isFavorite ? 's' : 'r'} fa-star favorite-star text-${isFavorite ? 'warning' : 'light'}" data-ticker="${ticker}"></i>`;
+                    }, width: 30, headerSort: false, hozAlign: "center"},
+                    
+                    {title: "Stock", field: "ticker", formatter: function(cell) {
+                        return `<strong class="text-primary">${cell.getValue()}</strong>`;
+                    }, width: 70},
+                    
+                    {title: "Company", field: "company"},
+                    
+                    {title: "Current", field: "current_price", sorter: "number", formatter: function(cell) {
+                        return `<span class="fw-medium">$${cell.getValue().toFixed(2)}</span>`;
+                    }, width: 90},
+                    
+                    {title: "Strike", field: "strike", sorter: "number", formatter: function(cell) {
+                        return `<span class="fw-medium">$${cell.getValue().toFixed(2)}</span>`;
+                    }, width: 90},
+                    
+                    {title: "% Below", field: "percent_below", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        return `<span class="${value > 10 ? 'text-success' : value > 5 ? 'text-primary' : ''}">
+                        ${value.toFixed(2)}%</span>`;
+                    }, width: 90, tooltip: "Percentage below current price"},
+                    
+                    // Add MA50 column
+                    {title: "MA50", field: "ma50", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        if (!value && value !== 0) return "N/A";
+                        return `<span>$${value.toFixed(2)}</span>`;
+                    }, width: 90, tooltip: "50-day Moving Average"},
+                    
+                    // Add Support Quality column
+                    {title: "Support", field: "support_quality", formatter: function(cell) {
+                        const value = cell.getValue();
+                        let colorClass = "";
+                        
+                        switch(value) {
+                            case 'Excellent': colorClass = "text-success fw-bold"; break;
+                            case 'Good': colorClass = "text-primary fw-bold"; break;
+                            case 'Moderate': colorClass = "text-info fw-bold"; break;
+                            case 'Weak': colorClass = "text-warning fw-bold"; break;
+                            default: colorClass = "text-muted";
+                        }
+                        
+                        return `<span class="${colorClass}">${value || 'Unknown'}</span>`;
+                    }, width: 90, tooltip: "Quality of technical support at strike price based on MA50 distance"},
+                    
+                    // KEY OPTION METRICS GROUP
+                    {title: "Premium", field: "premium", sorter: "number", formatter: function(cell) {
+                        return `<span class="fw-medium">$${cell.getValue().toFixed(2)}</span>`;
+                    }, width: 90},
+                    
+                    {title: "$/Day", field: "premium_per_day", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        return `<span class="${value >= 0.20 ? 'text-success fw-bold' : value >= 0.15 ? 'text-primary fw-bold' : value >= 0.10 ? 'text-warning fw-bold' : ''}">
+                        $${value.toFixed(2)}</span>`;
+                    }, width: 90},
+                    
+                    {title: "Return %", field: "return_percent", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        return `<span class="${value > 2.0 ? 'text-success' : value > 1.0 ? 'text-primary' : ''}">
+                        ${value.toFixed(2)}%</span>`;
+                    }, width: 90},
+                    
+                    {title: "Days", field: "days_to_expiry", sorter: "number", width: 70},
+                    
+                    {title: "Expiry", field: "expiry", sorter: "date", sorterParams: {
+                        format: "YYYY-MM-DD"
+                    }, width: 100},
+                    
+                    // RISK ASSESSMENT GROUP
+                    // Add Max 1D Move column
+                    {title: "Max 1D Move", field: "max_daily_move", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        if (!value && value !== 0) return "N/A";
+                        
+                        // Get date from the row data
+                        const date = cell.getData().max_daily_move_date;
+                        
+                        let colorClass = "";
+                        if (value < 10) colorClass = "text-success"; 
+                        else if (value < 15) colorClass = "text-primary"; 
+                        else if (value < 20) colorClass = "text-warning"; 
+                        else colorClass = "text-danger";
+                        
+                        return `<span class="${colorClass}">${value.toFixed(1)}%</span><br><small class="text-muted">${date || ''}</small>`;
+                    }, width: 120, tooltip: "Maximum 1-day price movement in the past 30 days"},
+                    
+                    // Add Max 5D Move column
+                    {title: "Max 5D Move", field: "max_weekly_move", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        if (!value && value !== 0) return "N/A";
+                        
+                        // Get dates from the row data
+                        const startDate = cell.getData().max_weekly_move_start;
+                        const endDate = cell.getData().max_weekly_move_end;
+                        const dateRange = startDate && endDate ? `${startDate} to ${endDate}` : '';
+                        
+                        let colorClass = "";
+                        if (value < 15) colorClass = "text-success"; 
+                        else if (value < 20) colorClass = "text-primary"; 
+                        else if (value < 30) colorClass = "text-warning"; 
+                        else colorClass = "text-danger";
+                        
+                        return `<span class="${colorClass}">${value.toFixed(1)}%</span><br><small class="text-muted">${dateRange}</small>`;
+                    }, width: 160, tooltip: "Maximum 5-day price movement in the past 30 days"},
+                    
+                    // CSP Score column with visual indicator and components
+                    {title: "CSP Score", field: "csp_quality_score", sorter: "number", formatter: function(cell) {
+                        const value = cell.getValue();
+                        if (!value && value !== 0) return "N/A";
+                        
+                        // Color coding based on score ranges
+                        let colorClass = "";
+                        if (value >= 8) colorClass = "text-success"; // Good scores in green
+                        else if (value >= 6) colorClass = "text-primary"; // Decent scores in blue
+                        else if (value >= 4) colorClass = "text-warning"; // Average scores in yellow/orange
+                        else colorClass = "text-danger"; // Poor scores in red
+                        
+                        // Get components, if available
+                        const components = cell.getData().score_components || {};
+                        
+                        let componentHtml = '';
+                        if (Object.keys(components).length > 0) {
+                            componentHtml = `
+                            <div style="font-size: 0.8em; margin-top: 4px; color: var(--text-light);">
+                                <small>IV/HV: ${components.iv_hv_score?.toFixed(1) || 'N/A'}</small><br>
+                                <small>RSI: ${components.rsi_score?.toFixed(1) || 'N/A'}</small><br>
+                                <small>Premium: ${components.premium_score?.toFixed(1) || 'N/A'}</small><br>
+                                <small>OTM: ${components.otm_score?.toFixed(1) || 'N/A'}</small><br>
+                                <small>Support: ${components.support_score?.toFixed(1) || 'N/A'}</small>
+                            </div>`;
+                        }
+                        
+                        return `<div class="${colorClass} fw-bold">${value.toFixed(1)}</div>${componentHtml}`;
+                    }, width: 120, tooltip: function(cell) {
+                        const components = cell.getData().score_components;
+                        if (!components) return "CSP Quality Score (0-10)";
+                        
+                        let tooltip = "CSP Quality Score Components:\n";
+                        if (components.iv_hv_score !== undefined) tooltip += `• IV/HV Ratio: ${components.iv_hv_score.toFixed(1)}/10\n`;
+                        if (components.rsi_score !== undefined) tooltip += `• RSI: ${components.rsi_score.toFixed(1)}/10\n`;
+                        if (components.premium_score !== undefined) tooltip += `• Premium Quality: ${components.premium_score.toFixed(1)}/10\n`;
+                        if (components.otm_score !== undefined) tooltip += `• OTM Probability: ${components.otm_score.toFixed(1)}/10\n`;
+                        if (components.support_score !== undefined) tooltip += `• Technical Support: ${components.support_score.toFixed(1)}/10`;
+                        
+                        return tooltip;
+                    }}
+                ],
+                rowClick: function(e, row) {
+                    if ($(e.target).hasClass('table-star')) return; // Don't trigger on star click
+                    
+                    // Toggle row selection
+                    row.toggleSelect();
+                }
+            });
+            
+            // Set up direct click handler for star icons
+            $(document).on('click', '.tabulator-cell .favorite-star', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                const ticker = $(this).data('ticker');
+                console.log("Star icon clicked in table:", ticker);
+                
+                if (!ticker) {
+                    console.error("No ticker found on star element");
+                    return;
+                }
+                
+                // Find the parent row data
+                let company = "";
+                try {
+                    const $row = $(this).closest('.tabulator-row');
+                    if ($row.length) {
+                        const rowId = $row.attr('data-id');
+                        if (rowId) {
+                            const rowComponent = table.getRow(rowId);
+                            if (rowComponent) {
+                                const rowData = rowComponent.getData();
+                                company = rowData.company || "";
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error getting row data:", err);
+                }
+                
+                // Call toggleFavorite with the ticker and company
+                toggleFavorite(ticker, company || "Unknown");
+                
+                // Toggle the star appearance directly
+                $(this).toggleClass('text-warning text-light');
+            });
+        }
+        
+        // Setup event handlers
+        function setupEventHandlers() {
+            // NOTE: The handler for the top refresh button was removed as part of UI simplification
+            // This helps reduce code duplication and simplifies the interface for users
+            
+            // Add the refresh button handler
+            $('#refresh').click(function() {
+                console.log('Refresh button clicked');
+                
+                // Check if refresh is already in progress
+                if (refreshInProgress) {
+                    console.log('Refresh already in progress');
+                    return;
+                }
+                
+                refreshInProgress = true;
+                
+                // Show loading spinner
+                $('#loadingSpinner').show();
+                
+                // Get selected stocks
+                const selectedStocks = $('#stockSelect').val() || [];
+                if (selectedStocks.length === 0) {
+                    alert('Please select at least one stock');
+                    $('#loadingSpinner').hide();
+                    refreshInProgress = false;
+                    return;
+                }
+                
+                // Get probability and budget
+                const probability = parseFloat($('#minOtmProb').val() || 75);
+                const budget = parseFloat($('#maxBudget').val() || 10000);
+                const timeframe = parseInt($('#timeframeSelect').val() || 14);
+                
+                console.log(`Refreshing data for ${selectedStocks.length} stocks with probability ${probability}%, budget $${budget}, timeframe ${timeframe} days`);
+                
+                // Prepare stocks array
+                const stocksArray = selectedStocks.map(stock => {
+                    try {
+                        return JSON.parse(stock);
+                    } catch (e) {
+                        console.error('Error parsing stock:', stock, e);
+                        return null;
+                    }
+                }).filter(Boolean);
+                
+                // Make API request
+                fetch('/api/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        stocks: stocksArray,
+                        probability: probability,
+                        budget: budget,
+                        timeframe: timeframe
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Refresh response:', data);
+                    
+                    // Update table data
+                    if (data.success) {
+                        // Store the data for AI recommendations
+                        window.optionsData = data.data || [];
+                        
+                        // Update the table
+                        if (table) {
+                            table.setData(data.data || []);
+                        }
+                        
+                        // Trigger dataLoaded event
+                        $(document).trigger('dataLoaded');
+                        
+                        // Update top choices
+                        updateTopChoices(data.data || []);
+                    } else {
+                        console.error('Error refreshing data:', data.error);
+                        showErrorToast('Error refreshing data: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error refreshing data:', error);
+                    showErrorToast('Error refreshing data: ' + error.message);
+                })
+                .finally(() => {
+                    // Hide loading spinner
+                    $('#loadingSpinner').hide();
+                    refreshInProgress = false;
+                });
+            });
+            
+            // Load favorites button
+            $('#loadFavoritesBtn').click(function() {
+                try {
+                    console.log('Load Favorites button clicked');
+                    
+                    if (favorites.length === 0) {
+                        console.log('No favorites found');
+                        alert('No favorites saved. Click the star icon next to stocks to save them as favorites.');
+                        return;
+                    }
+                    
+                    console.log(`Found ${favorites.length} favorites:`, favorites);
+                    
+                    // Ensure we have stocks loaded
+                    const stockOptions = $('#stockSelect option');
+                    console.log(`Found ${stockOptions.length} stock options in dropdown`);
+                    
+                    if (stockOptions.length === 0) {
+                        console.log('No stock options loaded yet');
+                        alert('Stocks are still loading. Please wait a moment and try again.');
+                        return;
+                    }
+                    
+                    // Clear current selection
+                    $('#stockSelect').val(null).trigger('change');
+                    console.log('Cleared current selection');
+                    
+                    // Create arrays for tracking what we're doing
+                    const valuesToSelect = [];
+                    const tickersToSelect = [];
+                    
+                    // First, collect ALL options into a manageable array
+                    const allStockOptions = [];
+                    stockOptions.each(function() {
+                        const $option = $(this);
+                        const value = $option.val();
+                        
+                        if (!value) return;
+                        
+                        try {
+                            const stockData = JSON.parse(value);
+                            allStockOptions.push({
+                                value: value,
+                                ticker: stockData.ticker,
+                                name: stockData.name,
+                                element: $option[0]
+                            });
+                        } catch (e) {
+                            console.error('Error parsing stock option:', value, e);
+                        }
+                    });
+                    
+                    console.log(`Parsed ${allStockOptions.length} valid stock options`);
+                    
+                    // Now match favorites against available options
+                    favorites.forEach(favorite => {
+                        const match = allStockOptions.find(option => 
+                            option.ticker === favorite.ticker
+                        );
+                        
+                        if (match) {
+                            valuesToSelect.push(match.value);
+                            tickersToSelect.push(match.ticker);
+                            console.log(`Found match for favorite ${favorite.ticker}`);
+                        } else {
+                            console.warn(`Could not find match for favorite ${favorite.ticker}`);
+                        }
+                    });
+                    
+                    console.log(`Found ${valuesToSelect.length} matches: ${tickersToSelect.join(', ')}`);
+                    
+                    if (valuesToSelect.length === 0) {
+                        alert('None of your favorites are available in the current stock list.');
+                        return;
+                    }
+                    
+                    // Set the values in the select
+                    console.log('Setting values in select:', valuesToSelect);
+                    $('#stockSelect').val(valuesToSelect).trigger('change');
+                    
+                    // Verify we set the values
+                    const currentlySelected = $('#stockSelect').val() || [];
+                    console.log(`After setting values, select has ${currentlySelected.length} items selected`);
+                    
+                    // Highlight button to show success
+                    const $btn = $(this);
+                    $btn.removeClass('btn-outline-primary').addClass('btn-success');
+                    setTimeout(() => {
+                        $btn.removeClass('btn-success').addClass('btn-outline-primary');
+                    }, 1000);
+                    
+                    // Automatically trigger refresh after loading favorites
+                    setTimeout(() => {
+                        // Double-check we have selections
+                        const finalSelection = $('#stockSelect').val();
+                        if (finalSelection && finalSelection.length > 0) {
+                            console.log(`Triggering refresh with ${finalSelection.length} stocks selected`);
+                            $('#refresh').click();
+                } else {
+                            console.warn('Cannot refresh - no stocks selected');
+                        }
+                    }, 500);
+                } catch (e) {
+                    console.error('Error in Load Favorites button:', e);
+                    alert('An error occurred while loading favorites. See console for details.');
+                }
+            });
+            
+            // Clear favorites
+            $('#clearFavorites').click(function() {
+                if (confirm('Are you sure you want to clear all favorites?')) {
+                    favorites = [];
+                    saveFavorites();
+                    table.redraw(true);
+                }
+            });
+            
+            // Show only favorites button
+            $('#favoritesBtn').click(function() {
+                console.log('Favorites button clicked');
+                
+                if (favorites.length === 0) {
+                    // Show empty message
+                    $('#noFavoritesMessage').show();
+                    $('#favoritesList').hide();
+                } else {
+                    // Hide empty message
+                    $('#noFavoritesMessage').hide();
+                    $('#favoritesList').show();
+                    
+                    // Clear and populate favorites list
+                    populateFavoritesList();
+                }
+                
+                // Show the modal
+                var favoritesModal = new bootstrap.Modal(document.getElementById('favoritesModal'));
+                favoritesModal.show();
+            });
+        }
+            
+            // Function to populate the favorites list in the modal
+            function populateFavoritesList() {
+                const $list = $('#favoritesList');
+                $list.empty();
+                
+                console.log('Populating favorites list with:', favorites);
+                
+                favorites.forEach(favorite => {
+                    const $item = $(`
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-star text-warning me-2"></i>
+                                <strong>${favorite.ticker}</strong> - ${favorite.name}
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-primary load-favorite-btn" data-ticker="${favorite.ticker}">
+                                    <i class="fas fa-plus"></i> Add to Selection
+                                </button>
+                                <button class="btn btn-sm btn-danger remove-favorite-btn" data-ticker="${favorite.ticker}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `);
+                    
+                    $list.append($item);
+                });
+                
+                // Add event handlers for the buttons
+                $('.load-favorite-btn').click(function() {
+                    const ticker = $(this).data('ticker');
+                    const favorite = favorites.find(f => f.ticker === ticker);
+                    
+                    if (favorite) {
+                        // Find the matching option in the select box
+                        const allOptions = [];
+                        $('#stockSelect option').each(function() {
+                            try {
+                                const value = $(this).val();
+                                if (value) {
+                                    const data = JSON.parse(value);
+                                    if (data.ticker === ticker) {
+                                        allOptions.push($(this).val());
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Error parsing option:', e);
+                            }
+                        });
+                        
+                        if (allOptions.length > 0) {
+                            // Get current selection
+                            const currentSelection = $('#stockSelect').val() || [];
+                            
+                            // Add this option if not already selected
+                            if (!currentSelection.includes(allOptions[0])) {
+                                const newSelection = [...currentSelection, allOptions[0]];
+                                $('#stockSelect').val(newSelection).trigger('change');
+                                console.log(`Added ${ticker} to selection`);
+                        } else {
+                                console.log(`${ticker} already in selection`);
+                            }
+                        }
+                    }
+                });
+                
+                $('.remove-favorite-btn').click(function() {
+                    const ticker = $(this).data('ticker');
+                    const favorite = favorites.find(f => f.ticker === ticker);
+                    
+                    if (favorite && confirm(`Remove ${ticker} from favorites?`)) {
+                        toggleFavorite(ticker, favorite.name);
+                        $(this).closest('.list-group-item').remove();
+                        
+                        // If no more favorites, show empty message
+                        if (favorites.length === 0) {
+                            $('#noFavoritesMessage').show();
+                            $('#favoritesList').hide();
+                        }
+                    }
+                });
+            }
+            
+        // Update favorites count badge
+        function updateFavoritesCount() {
+            const count = favorites.length;
+            $('#favoritesCount').text(count);
+            
+            // Change badge styling based on count
+            if (count > 0) {
+                $('#favoritesCount').removeClass('bg-secondary').addClass('bg-warning text-dark');
+                $('#favoritesBtn').removeClass('btn-outline-secondary').addClass('btn-outline-warning');
+                            } else {
+                $('#favoritesCount').removeClass('bg-warning text-dark').addClass('bg-secondary');
+                $('#favoritesBtn').removeClass('btn-outline-warning').addClass('btn-outline-secondary');
+            }
+        }
+        
+        // Update top choices section with the best options
+        function updateTopChoices(data) {
+            const $container = $('#topChoicesContainer');
+            
+            if (!data || data.length === 0) {
+                $container.html('<div class="col-md-12"><p class="text-center text-muted">No data available</p></div>');
+                return;
+            }
+            
+            // Sort data by CSP score first, then by category if scores are equal
+            const sortedData = [...data].sort((a, b) => {
+                // First sort by CSP score (descending)
+                const scoreA = a.csp_quality_score || 0;
+                const scoreB = b.csp_quality_score || 0;
+                
+                if (scoreA !== scoreB) {
+                    return scoreB - scoreA;
+                }
+                
+                // If scores are equal, sort by category
+                const categoryOrder = { 'Best': 1, 'Better': 2, 'Good': 3 };
+                if (categoryOrder[a.category] !== categoryOrder[b.category]) {
+                    return categoryOrder[a.category] - categoryOrder[b.category];
+                }
+                
+                // Finally sort by premium_per_day as a tiebreaker
+                return b.premium_per_day - a.premium_per_day;
+            });
+            
+            // Take top 5 options
+            const topOptions = sortedData.slice(0, 5);
+            
+            let html = '';
+            topOptions.forEach((option, index) => {
+                const rank = index + 1;
+                const categoryClass = option.category === 'Best' ? 'best' : 
+                                     option.category === 'Better' ? 'better' : 'good';
+                
+                // Add slight animation delay for each card
+                const animationDelay = index * 0.1;
+                
+                // Format max moves with dates
+                const max1dMove = option.max_daily_move ? 
+                    `${option.max_daily_move.toFixed(1)}% ${option.max_daily_move_date ? `(${option.max_daily_move_date})` : ''}` : 
+                    'N/A';
+                    
+                const max5dMove = option.max_weekly_move ? 
+                    `${option.max_weekly_move.toFixed(1)}% ${option.max_weekly_move_start && option.max_weekly_move_end ? 
+                        `(${option.max_weekly_move_start} to ${option.max_weekly_move_end})` : ''}` : 
+                    'N/A';
+                
+                html += `
+                    <div class="col-md-4 mb-4">
+                        <div class="top-choice-card ${categoryClass}" style="animation-delay: ${animationDelay}s">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span class="rank-tag">Rank #${rank}</span>
+                                <span class="category-tag">${option.category}</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="ticker-symbol">${option.ticker}</div>
+                                <div class="strike-price">Strike: $${option.strike.toFixed(2)}</div>
+                                
+                                <div class="metrics">
+                                    <div class="metric-item">
+                                        <div class="metric-label">Premium</div>
+                                        <div class="metric-value">$${option.premium.toFixed(2)}</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">Daily</div>
+                                        <div class="metric-value">$${option.premium_per_day.toFixed(2)}/day</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">Expiry</div>
+                                        <div class="metric-value">${option.expiry}</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">Days</div>
+                                        <div class="metric-value">${option.days_to_expiry}</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">OTM Probability</div>
+                                        <div class="metric-value">${option.otm_probability.toFixed(1)}%</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">Max 1D Move</div>
+                                        <div class="metric-value">${option.max_daily_move ? option.max_daily_move.toFixed(1) + '%' : 'N/A'}</div>
+                                        ${option.max_daily_move_date ? `<div class="metric-date">${option.max_daily_move_date}</div>` : ''}
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">Max 5D Move</div>
+                                        <div class="metric-value">${option.max_weekly_move ? option.max_weekly_move.toFixed(1) + '%' : 'N/A'}</div>
+                                        ${option.max_weekly_move_start && option.max_weekly_move_end ? 
+                                            `<div class="metric-date">${option.max_weekly_move_start} to ${option.max_weekly_move_end}</div>` : ''}
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">MA50</div>
+                                        <div class="metric-value">${option.ma50 ? '$' + option.ma50.toFixed(2) : 'N/A'}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="score-container">
+                                    <div class="metric-label">CSP Score</div>
+                                    <div class="csp-score">${option.csp_quality_score ? option.csp_quality_score.toFixed(1) : 'N/A'}<span class="text-muted">/10</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            $container.html(html);
+        }
+        
+        // Show error toast
+        function showErrorToast(message) {
+            $('#errorToastBody').text(message);
+            const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+            toast.show();
+        }
+    </script>
+</body>
+</html> 

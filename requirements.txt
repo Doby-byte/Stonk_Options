@@ -1,0 +1,24 @@
+# S&P 500 Options Analysis Tool - Dependencies
+# These package versions have been tested and work reliably with the custom headers
+# solution that bypasses Yahoo Finance rate limiting.
+# 
+# IMPORTANT: If you encounter "429 Too Many Requests" errors:
+# 1. Ensure you're using yfinance >= 0.2.55 which has improved rate limit handling
+# 2. See the rate limiting solution documentation in app.py and README.md
+# 3. Do NOT downgrade these packages as older versions may have different behavior
+#
+# Last successfully tested: [DATE]
+
+flask>=3.1.0
+pandas>=2.2.3
+numpy>=1.24.3
+yfinance>=0.2.55  # Critical for rate limiting solution
+matplotlib>=3.7.1
+lxml>=4.9.2
+xlsxwriter>=3.1.0
+Werkzeug>=3.1.3
+flask-cors>=5.0.1
+scipy>=1.13.1
+google-generativeai>=0.8.4
+python-dotenv>=1.0.0
+beautifulsoup4>=4.12.2 
